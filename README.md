@@ -1,84 +1,134 @@
-# Tutor Virtual ESUCAR
 
-**Desarrollo de Aplicaciones Móviles — DSY1105**
+# Tutor Virtual ESUCAR — Plan B
 
-**Duoc UC — Escuela de Informática y Telecomunicaciones**
+## Descripción
 
-## 1. Descripción del proyecto
+Tutor Virtual ESUCAR es un prototipo académico de
+aplicación móvil Android destinado a apoyar la
+organización del Trabajo de Título de estudiantes
+de la Escuela de Suboficiales de Carabineros de Chile.
 
-Tutor Virtual ESUCAR es un prototipo de aplicación móvil Android desarrollado para apoyar a los estudiantes de la Escuela de Suboficiales de Carabineros de Chile (ESUCAR) durante las asignaturas Trabajo de Título I, II y III.
+El proyecto fue desarrollado para la asignatura
+Desarrollo de Aplicaciones Móviles (DSY1105)
+de Duoc UC.
 
-La aplicación busca facilitar el acceso a guías metodológicas, preguntas frecuentes, normas APA, seguimiento de avances y recursos académicos, contribuyendo a la autonomía del estudiante.
+Esta versión corresponde a un desarrollo individual
+de contingencia (Plan B), paralelo al proyecto
+del equipo académico.
 
-## 2. Equipo de desarrollo
+## Responsable
 
-| Integrante | Responsabilidad |
-|---|---|
-| Felipe González | Configuración inicial, arquitectura, navegación e integración |
-| Yanina Silva | Diseño de interfaces, formularios y accesibilidad |
-| Vicente Valenzuela | Persistencia local, seguimiento de entregables y recursos nativos |
+Felipe González // Vicente Valenzuela // Yanina Silva
 
-*Las responsabilidades indicadas corresponden a la distribución propuesta del equipo.*
-
-## 3. Tecnologías utilizadas
+## Tecnologías utilizadas
 
 - Kotlin
-- Jetpack Compose
-- Material 3
 - Android Studio
+- Jetpack Compose
+- Material Design 3
+- DataStore Preferences
+- Corrutinas de Kotlin
 - Git y GitHub
-- Estructura inicial orientada a MVVM
+- HTTP y JSON
 
-## 4. Funcionalidades implementadas
+## Funcionalidades implementadas
 
-- Pantalla principal con identidad visual propuesta para ESUCAR.
-- Acceso visual a seis secciones académicas.
-- Navegación básica funcional entre pantallas provisionales.
-- Botón para regresar al inicio.
-- Ejecución verificada en emulador Pixel 7 con Android 15.
+### Etapas metodológicas
+- Listado de cinco etapas académicas.
+- Consulta del detalle de cada etapa.
+- Buscador de etapas.
+- Guía interactiva de cinco pasos.
+- Navegación entre pantallas.
 
-## 5. Funcionalidades pendientes
+### Preguntas frecuentes
+- Preguntas organizadas por categorías.
+- Búsqueda sin distinguir mayúsculas ni tildes.
+- Respuestas expandibles.
 
-- Guías metodológicas de Trabajo de Título I, II y III.
-- Buscador de preguntas frecuentes.
-- Consulta de normas APA.
-- Seguimiento y almacenamiento local de entregables.
-- Calendario y notificaciones académicas.
-- Integración de recursos nativos.
-- Validaciones de formularios y animaciones.
-- Pruebas de funcionamiento e integración.
+### Seguimiento académico
+- Estados: Por iniciar, En desarrollo,
+  Enviado y Aprobado.
+- Modificación manual de estados.
+- Persistencia local con DataStore.
+- Estados compartidos entre pantallas.
 
-## 6. Arquitectura del proyecto
+### Calendario académico
+- Listado de hitos y actividades.
+- Fechas de entrega editables.
+- Ordenamiento cronológico.
+- Marcado de actividades completadas.
+- Avisos de vencimientos próximos.
 
-```text
-cl.duoc.tutorvirtual
-├── data
-├── model
-├── navigation
-│   └── AppNavigation.kt
-├── ui
-│   ├── components
-│   ├── screens
-│   │   └── HomeScreen.kt
-│   └── theme
-├── viewmodel
-└── MainActivity.kt
-```
+### Notificaciones
+- Notificación de prueba.
+- Recordatorios programados para
+  uno y tres días antes de la entrega.
+- Activación individual de recordatorios.
+- Reprogramación tras reinicio del dispositivo.
 
-La implementación completa del patrón MVVM se encuentra pendiente.
+### Rúbricas
+- Consulta de criterios por etapa.
+- Contenido disponible sin conexión.
+- Identificación de criterios orientativos.
 
-## 7. Cómo ejecutar la aplicación
+### Novedades académicas
+- Descarga de novedades desde GitHub.
+- Lectura de contenido JSON.
+- Copia local para acceso sin conexión.
+- Visualización de la última sincronización.
 
-1. Clonar el repositorio de GitHub.
+### Accesibilidad
+- Modo normal y alto contraste.
+- Preferencia guardada en DataStore.
+- Colores adaptados en las pantallas
+  principales de la aplicación.
+
+## Estructura del proyecto
+
+- model: modelos de datos.
+- data: repositorios y persistencia.
+- navigation: navegación de pantallas.
+- ui/screens: interfaces de usuario.
+- ui/theme: colores y estilos.
+- notifications: notificaciones y alarmas.
+
+## Requisitos para ejecutar
+
+- Android Studio.
+- SDK de Android 37.
+- Dispositivo o emulador Android
+  compatible con API 24 o superior.
+
+## Instalación
+
+1. Clonar el repositorio.
 2. Abrir el proyecto en Android Studio.
-3. Sincronizar las dependencias de Gradle.
-4. Seleccionar un emulador Android compatible.
-5. Ejecutar la configuración `app`.
+3. Sincronizar Gradle.
+4. Seleccionar un dispositivo o emulador.
+5. Ejecutar la aplicación.
 
-**Repositorio:** https://github.com/felipegonzalez1983/Tutor_Virtual_ESUCAR
+Para recibir notificaciones en versiones
+compatibles de Android, conceder el permiso
+de notificaciones cuando sea solicitado.
 
-## 8. Estado del proyecto
+## Pruebas funcionales
 
-Prototipo académico en desarrollo. Las pantallas secundarias actuales son provisionales y se reemplazarán por sus funcionalidades correspondientes.
+Se han realizado pruebas manuales de las
+12 historias de usuario del prototipo,
+incluyendo navegación, persistencia local,
+recordatorios y alto contraste.
 
-Esta aplicación no constituye un sistema oficial de Carabineros de Chile ni implica su adopción institucional.
+La revisión formal de los requisitos técnicos
+de la evaluación se realiza por separado.
+
+## Consideraciones
+
+Este proyecto es un prototipo educativo.
+
+Las etapas, fechas, rúbricas y novedades
+de demostración no representan necesariamente
+información oficial de ESUCAR.
+
+Los estados académicos son registrados
+manualmente por el usuario y no equivalen
+a una aprobación institucional.
