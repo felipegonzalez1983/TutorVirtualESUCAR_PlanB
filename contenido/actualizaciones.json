@@ -1,0 +1,24 @@
+
+[
+  {
+    "id": "NOVEDAD-001",
+    "titulo": "Bienvenido al Tutor Virtual ESUCAR",
+    "descripcion": "Este prototipo permite consultar etapas metodológicas, organizar hitos académicos y utilizar recursos de orientación para el Trabajo de Título.",
+    "fechaPublicacion": "2026-11-09",
+    "fuente": "Prototipo académico - contenido de demostración"
+  },
+  {
+    "id": "NOVEDAD-002",
+    "titulo": "Organiza tus entregas académicas",
+    "descripcion": "Utiliza el calendario para asignar fechas, marcar actividades realizadas y activar recordatorios de próximos vencimientos.",
+    "fechaPublicacion": "2026-11-09",
+    "fuente": "Prototipo académico - contenido de demostración"
+  },
+  {
+    "id": "NOVEDAD-003",
+    "titulo": "Consulta las rúbricas de evaluación",
+    "descripcion": "Revisa los criterios orientativos de las cinco etapas metodológicas. Estos criterios son ejemplos y no representan evaluaciones oficiales de ESUCAR.",
+    "fechaPublicacion": "2026-11-09",
+    "fuente": "Prototipo académico - contenido de demostración"
+  }
+]
