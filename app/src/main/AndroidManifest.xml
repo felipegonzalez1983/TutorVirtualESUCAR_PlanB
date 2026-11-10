@@ -1,28 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Conexión a internet para actualizar contenido -->
+    <uses-permission
+        android:name="android.permission.INTERNET" />
+
+    <!-- Notificaciones en Android 13 o superior -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Recuperar recordatorios al reiniciar el celular -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="Tutor Virtual ESUCAR Plan B"
         android:supportsRtl="true"
         android:theme="@style/Theme.TutorVirtualESUCAR">
+
+        <!-- Pantalla principal -->
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.TutorVirtualESUCAR"
-            android:windowSoftInputMode="adjustResize">
+            android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
+
+        <!-- Receptor de recordatorios académicos -->
+        <receiver
+            android:name=".notifications.RecordatorioReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <!-- Recuperación de alarmas tras reinicio -->
+        <receiver
+            android:name=".notifications.ReinicioReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+
+        </receiver>
+
     </application>
 
 </manifest>
