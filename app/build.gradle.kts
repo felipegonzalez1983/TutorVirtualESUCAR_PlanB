@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+
+    // Procesador para generar las clases de Room
+    id("com.google.devtools.ksp") version "2.3.13"
 }
 
 android {
@@ -50,35 +53,41 @@ dependencies {
 
     // JETPACK COMPOSE
     implementation(platform(libs.androidx.compose.bom))
-
     implementation(libs.androidx.activity.compose)
-
     implementation(libs.androidx.compose.material3)
-
     implementation(libs.androidx.compose.ui)
-
     implementation(libs.androidx.compose.ui.graphics)
-
     implementation(libs.androidx.compose.ui.tooling.preview)
 
     // ANDROID
     implementation(libs.androidx.core.ktx)
 
-    // LIFECYCLE
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-
     // ARQUITECTURA MVVM
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // ALMACENAMIENTO LOCAL DATASTORE
+    // DATASTORE - MANTENEMOS EL ACTUAL
     implementation(
         "androidx.datastore:datastore-preferences:1.1.7"
     )
 
-    // PRUEBAS UNITARIAS
+    // ROOM + SQLITE
+    implementation(
+        "androidx.room:room-runtime:2.8.5"
+    )
+
+    implementation(
+        "androidx.room:room-ktx:2.8.5"
+    )
+
+    // GENERACION DE CODIGO ROOM
+    ksp(
+        "androidx.room:room-compiler:2.8.5"
+    )
+
+    // PRUEBAS
     testImplementation(libs.junit)
 
-    // PRUEBAS INSTRUMENTADAS
     androidTestImplementation(
         platform(libs.androidx.compose.bom)
     )

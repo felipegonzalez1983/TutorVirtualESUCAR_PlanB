@@ -13,19 +13,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 import cl.duoc.tutorvirtual.data.AccesibilidadPreferences
 import cl.duoc.tutorvirtual.navigation.AppNavigation
 import cl.duoc.tutorvirtual.notifications.NotificacionesHelper
 import cl.duoc.tutorvirtual.ui.theme.ProveedorColoresEsucar
+import cl.duoc.tutorvirtual.viewmodel.EsucarDatabaseViewModel
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Crear el canal de notificaciones académicas
+        // Crear el canal de notificaciones academicas
         NotificacionesHelper.crearCanal(
             applicationContext
         )
@@ -34,7 +37,51 @@ class MainActivity : ComponentActivity() {
 
             val context = LocalContext.current
 
-            // Acceder a las preferencias de accesibilidad
+            // ==========================================
+            // INICIALIZACION DE ROOM + SQLITE
+            // ==========================================
+
+            // Obtener el ViewModel de la base de datos
+            val databaseViewModel: EsucarDatabaseViewModel =
+                viewModel()
+
+            // Observar el resultado de inicializacion
+            val baseDatosLista by
+            databaseViewModel.baseDatosLista.collectAsState()
+
+            val mensajeError by
+            databaseViewModel.mensajeError.collectAsState()
+
+            // Registrar el resultado en Logcat
+            LaunchedEffect(
+                baseDatosLista,
+                mensajeError
+            ) {
+
+                if (baseDatosLista) {
+
+                    android.util.Log.i(
+                        "ESUCAR_DATABASE",
+                        "Base de datos inicializada. " +
+                                "Las etapas estan registradas en SQLite."
+                    )
+
+                }
+
+                if (mensajeError != null) {
+
+                    android.util.Log.e(
+                        "ESUCAR_DATABASE",
+                        "Error al inicializar SQLite: " +
+                                mensajeError
+                    )
+                }
+            }
+
+            // ==========================================
+            // ACCESIBILIDAD
+            // ==========================================
+
             val accesibilidadPreferences = remember(context) {
                 AccesibilidadPreferences(
                     context.applicationContext
@@ -52,7 +99,10 @@ class MainActivity : ComponentActivity() {
                 initial = false
             )
 
-            // Solicitar permiso para notificaciones
+            // ==========================================
+            // PERMISOS DE NOTIFICACIONES
+            // ==========================================
+
             val permisoNotificaciones =
                 rememberLauncherForActivityResult(
                     contract =
@@ -86,14 +136,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Aplicar la configuración visual a la aplicación
+            // ==========================================
+            // INTERFAZ INSTITUCIONAL ESUCAR
+            // ==========================================
+
             MaterialTheme {
 
                 ProveedorColoresEsucar(
                     altoContraste = altoContraste
                 ) {
 
-                    // Mantener nuestra navegación existente
+                    // Mantener la navegacion existente
                     AppNavigation()
                 }
             }
