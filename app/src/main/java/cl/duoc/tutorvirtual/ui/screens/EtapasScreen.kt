@@ -17,80 +17,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
 
-import cl.duoc.tutorvirtual.data.EntregablesPreferences
-import cl.duoc.tutorvirtual.data.EtapasRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 import cl.duoc.tutorvirtual.model.Etapa
 import cl.duoc.tutorvirtual.ui.theme.LocalColoresEsucar
-
-import java.text.Normalizer
-import java.util.Locale
-
-// Permite buscar sin distinguir mayúsculas ni tildes
-private fun normalizarTextoEtapas(texto: String): String {
-    return Normalizer.normalize(
-        texto.lowercase(Locale.ROOT),
-        Normalizer.Form.NFD
-    ).replace(
-        Regex("\\p{M}+"),
-        ""
-    )
-}
+import cl.duoc.tutorvirtual.viewmodel.EtapasViewModel
 
 @Composable
 fun EtapasScreen(
     modifier: Modifier = Modifier,
     onEtapaClick: (Int) -> Unit = {},
-    onVolverInicio: () -> Unit = {}
+    onVolverInicio: () -> Unit = {},
+    etapasViewModel: EtapasViewModel = viewModel()
 ) {
 
+    // Colores institucionales ESUCAR
     val colores = LocalColoresEsucar.current
 
-    val altoContraste = colores.fondo == Color.Black
+    val altoContraste =
+        colores.fondo == Color.Black
 
-    val context = LocalContext.current
+    // Estado administrado por el ViewModel
+    val busqueda = etapasViewModel.busqueda
 
-    val preferences = remember(context) {
-        EntregablesPreferences(
-            context.applicationContext
-        )
-    }
+    val etapasFiltradas =
+        etapasViewModel.etapasFiltradas
 
-    val etapas = remember {
-        EtapasRepository.obtenerEtapas()
-            .sortedBy { it.id }
-    }
-
-    var busqueda by remember {
-        mutableStateOf("")
-    }
-
-    val etapasFiltradas = remember(
-        etapas,
-        busqueda
-    ) {
-
-        val textoBuscado = normalizarTextoEtapas(
-            busqueda.trim()
-        )
-
-        etapas.filter { etapa ->
-
-            val titulo = normalizarTextoEtapas(
-                etapa.titulo
-            )
-
-            val descripcion = normalizarTextoEtapas(
-                etapa.descripcion
-            )
-
-            textoBuscado.isEmpty() ||
-                    titulo.contains(textoBuscado) ||
-                    descripcion.contains(textoBuscado)
-        }
-    }
-
+    // Pantalla principal
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -98,7 +52,8 @@ fun EtapasScreen(
 
         contentPadding = PaddingValues(20.dp),
 
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(16.dp)
     ) {
 
         // VOLVER AL INICIO
@@ -161,6 +116,7 @@ fun EtapasScreen(
                         text = "Consulta las cinco etapas " +
                                 "de tu Trabajo de Título " +
                                 "y revisa tu progreso académico.",
+
                         color = colores.textoEncabezado,
                         fontSize = 14.sp,
                         lineHeight = 21.sp
@@ -176,7 +132,7 @@ fun EtapasScreen(
                 value = busqueda,
 
                 onValueChange = {
-                    busqueda = it
+                    etapasViewModel.actualizarBusqueda(it)
                 },
 
                 modifier = Modifier.fillMaxWidth(),
@@ -225,7 +181,7 @@ fun EtapasScreen(
             )
         }
 
-        // CONTADOR
+        // CONTADOR DE RESULTADOS
         item {
 
             Text(
@@ -243,7 +199,7 @@ fun EtapasScreen(
             )
         }
 
-        // RESULTADO SIN COINCIDENCIAS
+        // SIN RESULTADOS
         if (etapasFiltradas.isEmpty()) {
 
             item {
@@ -285,7 +241,9 @@ fun EtapasScreen(
 
             TarjetaEtapaAccesible(
                 etapa = etapa,
-                preferences = preferences,
+
+                etapasViewModel = etapasViewModel,
+
                 onClick = {
                     onEtapaClick(etapa.id)
                 }
@@ -316,26 +274,30 @@ fun EtapasScreen(
     }
 }
 
-// TARJETA DE UNA ETAPA METODOLÓGICA
+// TARJETA DE ETAPA METODOLÓGICA
 @Composable
 private fun TarjetaEtapaAccesible(
     etapa: Etapa,
-    preferences: EntregablesPreferences,
+    etapasViewModel: EtapasViewModel,
     onClick: () -> Unit
 ) {
 
     val colores = LocalColoresEsucar.current
 
-    val altoContraste = colores.fondo == Color.Black
+    val altoContraste =
+        colores.fondo == Color.Black
 
-    // Recuperar el estado guardado en DataStore
+    // El flujo ahora se obtiene del ViewModel
     val flujoEstado = remember(
-        preferences,
+        etapasViewModel,
         etapa.id
     ) {
-        preferences.obtenerEstado(etapa.id)
+        etapasViewModel.observarEstadoEtapa(
+            etapa.id
+        )
     }
 
+    // Compose observa el estado actualizado
     val estado by flujoEstado.collectAsState(
         initial = etapa.estado
     )
@@ -416,7 +378,7 @@ private fun TarjetaEtapaAccesible(
                 }
             }
 
-            // INFORMACIÓN DE LA ETAPA
+            // INFORMACIÓN ACADÉMICA
             Column(
                 modifier = Modifier.weight(1f),
 
@@ -452,10 +414,18 @@ private fun TarjetaEtapaAccesible(
                         Color.White
                     } else {
                         when (estado) {
-                            "Aprobado" -> Color(0xFFDCFCE7)
-                            "Enviado" -> Color(0xFFDBEAFE)
-                            "En desarrollo" -> Color(0xFFFFF4D6)
-                            else -> Color(0xFFE8EFE9)
+
+                            "Aprobado" ->
+                                Color(0xFFDCFCE7)
+
+                            "Enviado" ->
+                                Color(0xFFDBEAFE)
+
+                            "En desarrollo" ->
+                                Color(0xFFFFF4D6)
+
+                            else ->
+                                Color(0xFFE8EFE9)
                         }
                     },
 
@@ -474,10 +444,18 @@ private fun TarjetaEtapaAccesible(
                             Color.Black
                         } else {
                             when (estado) {
-                                "Aprobado" -> Color(0xFF166534)
-                                "Enviado" -> Color(0xFF1D4ED8)
-                                "En desarrollo" -> Color(0xFF875A13)
-                                else -> Color(0xFF174B35)
+
+                                "Aprobado" ->
+                                    Color(0xFF166534)
+
+                                "Enviado" ->
+                                    Color(0xFF1D4ED8)
+
+                                "En desarrollo" ->
+                                    Color(0xFF875A13)
+
+                                else ->
+                                    Color(0xFF174B35)
                             }
                         },
 
@@ -488,7 +466,7 @@ private fun TarjetaEtapaAccesible(
                 }
             }
 
-            // FLECHA AL DETALLE
+            // FLECHA DE NAVEGACIÓN
             Text(
                 text = "›",
 

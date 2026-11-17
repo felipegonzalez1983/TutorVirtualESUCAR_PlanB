@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -13,8 +12,10 @@ android {
 
     defaultConfig {
         applicationId = "cl.duoc.tutorvirtual.planb"
+
         minSdk = 24
         targetSdk = 37
+
         versionCode = 1
         versionName = "1.0"
 
@@ -47,29 +48,59 @@ android {
 
 dependencies {
 
-    // Jetpack Compose
+    // JETPACK COMPOSE
     implementation(platform(libs.androidx.compose.bom))
+
     implementation(libs.androidx.activity.compose)
+
     implementation(libs.androidx.compose.material3)
+
     implementation(libs.androidx.compose.ui)
+
     implementation(libs.androidx.compose.ui.graphics)
+
     implementation(libs.androidx.compose.ui.tooling.preview)
 
-    // Android
+    // ANDROID
     implementation(libs.androidx.core.ktx)
+
+    // LIFECYCLE
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Almacenamiento local para estados de entregables
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    // ARQUITECTURA MVVM
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // Pruebas
+    // ALMACENAMIENTO LOCAL DATASTORE
+    implementation(
+        "androidx.datastore:datastore-preferences:1.1.7"
+    )
+
+    // PRUEBAS UNITARIAS
     testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
 
-    // Herramientas de desarrollo
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
+    // PRUEBAS INSTRUMENTADAS
+    androidTestImplementation(
+        platform(libs.androidx.compose.bom)
+    )
+
+    androidTestImplementation(
+        libs.androidx.compose.ui.test.junit4
+    )
+
+    androidTestImplementation(
+        libs.androidx.espresso.core
+    )
+
+    androidTestImplementation(
+        libs.androidx.junit
+    )
+
+    // HERRAMIENTAS DE DESARROLLO
+    debugImplementation(
+        libs.androidx.compose.ui.test.manifest
+    )
+
+    debugImplementation(
+        libs.androidx.compose.ui.tooling
+    )
 }
