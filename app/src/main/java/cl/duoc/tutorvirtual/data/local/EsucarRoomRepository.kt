@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 class EsucarRoomRepository(context: Context) {
 
-    // Conexion con SQLite mediante Room
+    // CONEXION CON SQLITE MEDIANTE ROOM
     private val database =
         EsucarDatabase.obtenerInstancia(
             context.applicationContext
@@ -19,8 +19,11 @@ class EsucarRoomRepository(context: Context) {
     private val entregableDao =
         database.entregableDao()
 
-    // Cargar las cinco etapas metodologicas
-    // sin duplicar registros existentes
+    // =========================================
+    // ETAPAS METODOLOGICAS
+    // =========================================
+
+    // Cargar las cinco etapas sin duplicarlas
     suspend fun inicializarEtapas() {
 
         val etapasIniciales =
@@ -30,14 +33,13 @@ class EsucarRoomRepository(context: Context) {
                     id = etapa.id,
                     titulo = etapa.titulo,
                     descripcion = etapa.descripcion,
-                    formatoRequerido =
-                        etapa.formatoRequerido,
+                    formatoRequerido = etapa.formatoRequerido,
                     fechaLimite = etapa.fechaLimite,
                     estado = etapa.estado
                 )
             }
 
-        // IGNORE conserva registros que ya existen
+        // IGNORE conserva los registros existentes
         etapaDao.insertarEtapas(etapasIniciales)
     }
 
@@ -46,7 +48,7 @@ class EsucarRoomRepository(context: Context) {
         return etapaDao.obtenerTodasLasEtapas()
     }
 
-    // Consultar una etapa por ID
+    // Consultar etapa por ID
     suspend fun obtenerEtapaPorId(
         id: Int
     ): EtapaEntity? {
@@ -69,6 +71,10 @@ class EsucarRoomRepository(context: Context) {
         return etapaDao.contarEtapas()
     }
 
+    // =========================================
+    // ENTREGABLES ACADEMICOS
+    // =========================================
+
     // Consultar entregables por etapa
     fun observarEntregables(
         etapaId: Int
@@ -76,14 +82,14 @@ class EsucarRoomRepository(context: Context) {
         return entregableDao.obtenerPorEtapa(etapaId)
     }
 
-    // Guardar un entregable nuevo
+    // Guardar nuevo entregable
     suspend fun guardarEntregable(
         entregable: EntregableEntity
     ): Long {
         return entregableDao.insertar(entregable)
     }
 
-    // Actualizar un entregable existente
+    // Actualizar entregable existente
     suspend fun actualizarEntregable(
         entregable: EntregableEntity
     ) {
@@ -99,5 +105,17 @@ class EsucarRoomRepository(context: Context) {
             entregableId,
             nuevoEstado
         )
+    }
+
+    // =========================================
+    // NUEVA FUNCIONALIDAD: ELIMINAR ENTREGABLE
+    // =========================================
+
+    suspend fun eliminarEntregable(
+        entregable: EntregableEntity
+    ) {
+        // Room elimina el registro correspondiente
+        // al identificador del entregable.
+        entregableDao.eliminar(entregable)
     }
 }
