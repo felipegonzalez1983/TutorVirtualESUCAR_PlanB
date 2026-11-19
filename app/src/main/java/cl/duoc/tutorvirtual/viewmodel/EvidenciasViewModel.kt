@@ -11,29 +11,28 @@ import androidx.lifecycle.viewModelScope
 import cl.duoc.tutorvirtual.data.EsucarRoomRepository
 import cl.duoc.tutorvirtual.data.local.EvidenciaEntity
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 // ======================================================
 // VIEWMODEL DE EVIDENCIAS ACADEMICAS
 // TUTOR VIRTUAL ESUCAR - PLAN B
 //
-// Arquitectura MVVM + Room + SQLite
+// MVVM + ROOM + SQLITE
 //
-// Permite:
+// Funcionalidades:
 // 1. Consultar evidencias por entregable.
-// 2. Guardar referencias de archivos PDF.
-// 3. Registrar fotografias ya guardadas.
-// 4. Eliminar registros de evidencias.
+// 2. Registrar documentos PDF.
+// 3. Evitar PDF duplicados por URI.
+// 4. Registrar fotografias ya guardadas.
+// 5. Eliminar registros de evidencias.
 //
-// IMPORTANTE:
-// Las fotografias deben guardarse como archivos
-// permanentes antes de llamar a registrarFoto.
-//
-// Los PDF se seleccionan mediante OpenDocument.
+// No modifica las tablas existentes.
 // ======================================================
 
 class EvidenciasViewModel(
@@ -41,7 +40,7 @@ class EvidenciasViewModel(
 ) : AndroidViewModel(application) {
 
     // ==============================================
-    // REPOSITORIO ROOM
+    // REPOSITORIO
     // ==============================================
 
     private val repository =
@@ -51,7 +50,7 @@ class EvidenciasViewModel(
         application.contentResolver
 
     // ==============================================
-    // ESTADO DE OPERACIONES
+    // ESTADOS DE LA INTERFAZ
     // ==============================================
 
     private val _procesando =
@@ -80,7 +79,7 @@ class EvidenciasViewModel(
     }
 
     // ==============================================
-    // REGISTRAR PDF
+    // REGISTRAR DOCUMENTO PDF
     // ==============================================
 
     fun registrarPdf(
@@ -90,10 +89,22 @@ class EvidenciasViewModel(
         onResultado: (Boolean) -> Unit = {}
     ) {
 
-        viewModelScope.launch {
+        // Evitar otra operacion mientras
+        // existe un registro en proceso.
+        if (_procesando.value) {
 
-            _procesando.value = true
-            _mensaje.value = null
+            _mensaje.value =
+                "Ya existe una operación en curso."
+
+            onResultado(false)
+
+            return
+        }
+
+        _procesando.value = true
+        _mensaje.value = null
+
+        viewModelScope.launch {
 
             try {
 
@@ -105,18 +116,59 @@ class EvidenciasViewModel(
                     "El documento debe tener un nombre."
                 }
 
-                // Conservar acceso al documento
-                // seleccionado mediante OpenDocument.
+                // ==================================
+                // BUSCAR EVIDENCIAS EXISTENTES
+                // ==================================
+
+                val evidenciasExistentes =
+                    repository.observarEvidencias(
+                        entregableId
+                    ).first()
+
+                // La URI identifica el documento
+                // seleccionado desde Android.
+                val uriNueva = uri.toString()
+
+                val documentoDuplicado =
+                    evidenciasExistentes.any { evidencia ->
+
+                        evidencia.tipo == "PDF" &&
+                                evidencia.uriArchivo == uriNueva
+                    }
+
+                // ==================================
+                // EVITAR DUPLICADOS
+                // ==================================
+
+                if (documentoDuplicado) {
+
+                    _mensaje.value =
+                        "Este PDF ya está adjunto " +
+                                "al entregable seleccionado."
+
+                    onResultado(false)
+
+                    return@launch
+                }
+
+                // ==================================
+                // CONSERVAR ACCESO AL PDF
+                // ==================================
+
                 resolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
 
+                // ==================================
+                // CREAR REGISTRO ROOM
+                // ==================================
+
                 val evidencia = EvidenciaEntity(
                     entregableId = entregableId,
                     nombreArchivo = nombreArchivo.trim(),
                     tipo = "PDF",
-                    uriArchivo = uri.toString()
+                    uriArchivo = uriNueva
                 )
 
                 repository.guardarEvidencia(
@@ -127,6 +179,10 @@ class EvidenciasViewModel(
                     "Documento PDF registrado correctamente."
 
                 onResultado(true)
+
+            } catch (e: CancellationException) {
+
+                throw e
 
             } catch (e: Exception) {
 
@@ -144,7 +200,7 @@ class EvidenciasViewModel(
     }
 
     // ==============================================
-    // REGISTRAR FOTOGRAFIA YA GUARDADA
+    // REGISTRAR FOTOGRAFIA
     // ==============================================
 
     fun registrarFoto(
@@ -154,10 +210,20 @@ class EvidenciasViewModel(
         onResultado: (Boolean) -> Unit = {}
     ) {
 
-        viewModelScope.launch {
+        if (_procesando.value) {
 
-            _procesando.value = true
-            _mensaje.value = null
+            _mensaje.value =
+                "Ya existe una operación en curso."
+
+            onResultado(false)
+
+            return
+        }
+
+        _procesando.value = true
+        _mensaje.value = null
+
+        viewModelScope.launch {
 
             try {
 
@@ -189,6 +255,10 @@ class EvidenciasViewModel(
 
                 onResultado(true)
 
+            } catch (e: CancellationException) {
+
+                throw e
+
             } catch (e: Exception) {
 
                 _mensaje.value =
@@ -213,10 +283,20 @@ class EvidenciasViewModel(
         onResultado: (Boolean) -> Unit = {}
     ) {
 
-        viewModelScope.launch {
+        if (_procesando.value) {
 
-            _procesando.value = true
-            _mensaje.value = null
+            _mensaje.value =
+                "Ya existe una operación en curso."
+
+            onResultado(false)
+
+            return
+        }
+
+        _procesando.value = true
+        _mensaje.value = null
+
+        viewModelScope.launch {
 
             try {
 
@@ -228,6 +308,10 @@ class EvidenciasViewModel(
                     "Registro de evidencia eliminado."
 
                 onResultado(true)
+
+            } catch (e: CancellationException) {
+
+                throw e
 
             } catch (e: Exception) {
 
