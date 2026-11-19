@@ -34,6 +34,7 @@ import cl.duoc.tutorvirtual.ui.screens.AccesibilidadScreen
 import cl.duoc.tutorvirtual.ui.screens.LoginScreen
 import cl.duoc.tutorvirtual.ui.screens.DiagnosticoBiometriaScreen
 import cl.duoc.tutorvirtual.ui.screens.EvidenciaCamaraScreen
+import cl.duoc.tutorvirtual.ui.screens.SelectorDocumentoScreen
 
 import cl.duoc.tutorvirtual.viewmodel.LoginViewModel
 
@@ -42,11 +43,12 @@ import kotlinx.coroutines.launch
 // ======================================================
 // TUTOR VIRTUAL ESUCAR - NAVEGACION PRINCIPAL
 //
-// Login estudiantil
-// Sesion persistente con DataStore
-// Entregables con Room + SQLite
-// Diagnostico biometrico
-// Camara para evidencias academicas
+// LOGIN ESTUDIANTIL
+// DATASTORE - SESION PERSISTENTE
+// ROOM + SQLITE - ENTREGABLES
+// DIAGNOSTICO BIOMETRICO
+// CAMARA PARA EVIDENCIAS
+// SELECTOR DE DOCUMENTOS PDF
 // ======================================================
 
 @Composable
@@ -75,7 +77,7 @@ fun AppNavigation(
     val scope = rememberCoroutineScope()
 
     // ==============================================
-    // NAVEGACION
+    // ESTADO DE NAVEGACION
     // ==============================================
 
     var pantallaActual by rememberSaveable {
@@ -143,7 +145,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // MOSTRAR LOGIN SI NO HAY SESION
+    // LOGIN: NO EXISTE SESION ACTIVA
     // ==============================================
 
     if (estudianteActual == null) {
@@ -217,7 +219,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // ESTUDIANTE CON SESION ACTIVA
+    // ESTUDIANTE AUTENTICADO
     // ==============================================
 
     val nombreEstudiante =
@@ -227,7 +229,7 @@ fun AppNavigation(
         estudianteActual?.curso ?: ""
 
     // ==============================================
-    // BOTON ATRAS
+    // BOTON ATRAS DEL DISPOSITIVO
     // ==============================================
 
     BackHandler(
@@ -253,6 +255,8 @@ fun AppNavigation(
             "DiagnosticoBiometria" -> "Recursos"
 
             "EvidenciaCamara" -> "Recursos"
+
+            "SelectorDocumento" -> "Recursos"
 
             "RegistroEntregable" -> "Entregables"
 
@@ -356,7 +360,7 @@ fun AppNavigation(
         },
 
         // ==========================================
-        // BOTON DE NUEVO ENTREGABLE
+        // BOTON NUEVO ENTREGABLE
         // ==========================================
 
         floatingActionButton = {
@@ -397,7 +401,7 @@ fun AppNavigation(
         },
 
         // ==========================================
-        // BARRA INFERIOR
+        // BARRA INFERIOR DE NAVEGACION
         // ==========================================
 
         bottomBar = {
@@ -440,7 +444,8 @@ fun AppNavigation(
                             "Actualizaciones",
                             "Accesibilidad",
                             "DiagnosticoBiometria",
-                            "EvidenciaCamara"
+                            "EvidenciaCamara",
+                            "SelectorDocumento"
                         )
 
                         else -> pantallaActual == opcion
@@ -638,7 +643,7 @@ fun AppNavigation(
             }
 
             // ======================================
-            // REGISTRAR ENTREGABLE
+            // REGISTRO DE ENTREGABLES
             // ======================================
 
             "RegistroEntregable" -> {
@@ -657,7 +662,7 @@ fun AppNavigation(
             }
 
             // ======================================
-            // CALENDARIO
+            // CALENDARIO ACADEMICO
             // ======================================
 
             "Hitos" -> {
@@ -747,7 +752,22 @@ fun AppNavigation(
             }
 
             // ======================================
-            // RECURSOS
+            // NUEVO: SELECCION DE DOCUMENTOS PDF
+            // ======================================
+
+            "SelectorDocumento" -> {
+
+                SelectorDocumentoScreen(
+                    modifier = contenidoModifier,
+
+                    onVolver = {
+                        pantallaActual = "Recursos"
+                    }
+                )
+            }
+
+            // ======================================
+            // RECURSOS ACADEMICOS
             // ======================================
 
             "Recursos" -> {
@@ -785,6 +805,10 @@ fun AppNavigation(
 
                     onCamara = {
                         pantallaActual = "EvidenciaCamara"
+                    },
+
+                    onDocumentos = {
+                        pantallaActual = "SelectorDocumento"
                     }
                 )
             }
@@ -807,7 +831,8 @@ fun AppNavigation(
 
                         horizontalAlignment = Alignment.CenterHorizontally,
 
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                        verticalArrangement =
+                            Arrangement.spacedBy(14.dp)
                     ) {
 
                         Text(
@@ -856,7 +881,7 @@ fun AppNavigation(
 }
 
 // ======================================================
-// RECURSOS ACADEMICOS
+// PANTALLA DE RECURSOS ACADEMICOS
 // ======================================================
 
 @Composable
@@ -868,7 +893,8 @@ private fun RecursosScreen(
     onActualizaciones: () -> Unit,
     onAccesibilidad: () -> Unit,
     onBiometria: () -> Unit,
-    onCamara: () -> Unit
+    onCamara: () -> Unit,
+    onDocumentos: () -> Unit
 ) {
 
     val colores = LocalColoresEsucar.current
@@ -946,7 +972,7 @@ private fun RecursosScreen(
         )
 
         // ======================================
-        // NOVEDADES
+        // NOVEDADES ACADEMICAS
         // ======================================
 
         TarjetaRecurso(
@@ -1017,7 +1043,7 @@ private fun RecursosScreen(
         )
 
         // ======================================
-        // BIOMETRIA
+        // SEGURIDAD BIOMETRICA
         // ======================================
 
         TarjetaRecurso(
@@ -1032,7 +1058,7 @@ private fun RecursosScreen(
         )
 
         // ======================================
-        // NUEVO: CAMARA ACADEMICA
+        // CAMARA ACADEMICA
         // ======================================
 
         TarjetaRecurso(
@@ -1044,6 +1070,21 @@ private fun RecursosScreen(
 
             textoBoton = "Abrir cámara académica",
             onClick = onCamara
+        )
+
+        // ======================================
+        // NUEVO: DOCUMENTOS PDF
+        // ======================================
+
+        TarjetaRecurso(
+            titulo = "Documentos académicos",
+
+            descripcion = "Selecciona archivos PDF " +
+                    "desde el almacenamiento de Android " +
+                    "para probar la carga de evidencias.",
+
+            textoBoton = "Seleccionar documento PDF",
+            onClick = onDocumentos
         )
 
         // ======================================
@@ -1063,7 +1104,7 @@ private fun RecursosScreen(
 }
 
 // ======================================================
-// TARJETA DE RECURSOS
+// TARJETA REUTILIZABLE DE RECURSOS
 // ======================================================
 
 @Composable
