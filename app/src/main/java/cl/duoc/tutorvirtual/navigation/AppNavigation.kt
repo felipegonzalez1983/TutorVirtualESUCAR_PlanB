@@ -1,4 +1,4 @@
-package cl.duoc.tutorvirtual.navigation
+        package cl.duoc.tutorvirtual.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -35,6 +35,7 @@ import cl.duoc.tutorvirtual.ui.screens.LoginScreen
 import cl.duoc.tutorvirtual.ui.screens.DiagnosticoBiometriaScreen
 import cl.duoc.tutorvirtual.ui.screens.EvidenciaCamaraScreen
 import cl.duoc.tutorvirtual.ui.screens.SelectorDocumentoScreen
+import cl.duoc.tutorvirtual.ui.screens.AdjuntarEvidenciaScreen
 
 import cl.duoc.tutorvirtual.viewmodel.LoginViewModel
 
@@ -43,12 +44,14 @@ import kotlinx.coroutines.launch
 // ======================================================
 // TUTOR VIRTUAL ESUCAR - NAVEGACION PRINCIPAL
 //
-// LOGIN ESTUDIANTIL
-// DATASTORE - SESION PERSISTENTE
-// ROOM + SQLITE - ENTREGABLES
-// DIAGNOSTICO BIOMETRICO
-// CAMARA PARA EVIDENCIAS
-// SELECTOR DE DOCUMENTOS PDF
+// Login estudiantil
+// Sesion persistente con DataStore
+// Room + SQLite
+// CRUD de entregables
+// Diagnostico biometrico
+// Camara academica
+// Selector PDF
+// Adjuntar PDF a un entregable
 // ======================================================
 
 @Composable
@@ -145,7 +148,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // LOGIN: NO EXISTE SESION ACTIVA
+    // LOGIN SIN SESION ACTIVA
     // ==============================================
 
     if (estudianteActual == null) {
@@ -257,6 +260,8 @@ fun AppNavigation(
             "EvidenciaCamara" -> "Recursos"
 
             "SelectorDocumento" -> "Recursos"
+
+            "AdjuntarEvidencia" -> "Recursos"
 
             "RegistroEntregable" -> "Entregables"
 
@@ -401,7 +406,7 @@ fun AppNavigation(
         },
 
         // ==========================================
-        // BARRA INFERIOR DE NAVEGACION
+        // BARRA INFERIOR
         // ==========================================
 
         bottomBar = {
@@ -445,7 +450,8 @@ fun AppNavigation(
                             "Accesibilidad",
                             "DiagnosticoBiometria",
                             "EvidenciaCamara",
-                            "SelectorDocumento"
+                            "SelectorDocumento",
+                            "AdjuntarEvidencia"
                         )
 
                         else -> pantallaActual == opcion
@@ -752,12 +758,27 @@ fun AppNavigation(
             }
 
             // ======================================
-            // NUEVO: SELECCION DE DOCUMENTOS PDF
+            // SELECTOR DE PDF
             // ======================================
 
             "SelectorDocumento" -> {
 
                 SelectorDocumentoScreen(
+                    modifier = contenidoModifier,
+
+                    onVolver = {
+                        pantallaActual = "Recursos"
+                    }
+                )
+            }
+
+            // ======================================
+            // NUEVO: ADJUNTAR PDF A ENTREGABLE
+            // ======================================
+
+            "AdjuntarEvidencia" -> {
+
+                AdjuntarEvidenciaScreen(
                     modifier = contenidoModifier,
 
                     onVolver = {
@@ -809,6 +830,10 @@ fun AppNavigation(
 
                     onDocumentos = {
                         pantallaActual = "SelectorDocumento"
+                    },
+
+                    onAdjuntarEvidencia = {
+                        pantallaActual = "AdjuntarEvidencia"
                     }
                 )
             }
@@ -894,7 +919,8 @@ private fun RecursosScreen(
     onAccesibilidad: () -> Unit,
     onBiometria: () -> Unit,
     onCamara: () -> Unit,
-    onDocumentos: () -> Unit
+    onDocumentos: () -> Unit,
+    onAdjuntarEvidencia: () -> Unit
 ) {
 
     val colores = LocalColoresEsucar.current
@@ -972,7 +998,7 @@ private fun RecursosScreen(
         )
 
         // ======================================
-        // NOVEDADES ACADEMICAS
+        // NOVEDADES
         // ======================================
 
         TarjetaRecurso(
@@ -1073,7 +1099,7 @@ private fun RecursosScreen(
         )
 
         // ======================================
-        // NUEVO: DOCUMENTOS PDF
+        // SELECTOR PDF DE PRUEBA
         // ======================================
 
         TarjetaRecurso(
@@ -1085,6 +1111,22 @@ private fun RecursosScreen(
 
             textoBoton = "Seleccionar documento PDF",
             onClick = onDocumentos
+        )
+
+        // ======================================
+        // NUEVO: ADJUNTAR A UN ENTREGABLE
+        // ======================================
+
+        TarjetaRecurso(
+            titulo = "Adjuntar evidencia a entregable",
+
+            descripcion = "Selecciona una etapa, " +
+                    "elige un entregable existente " +
+                    "y vincula un documento PDF " +
+                    "utilizando Room y SQLite.",
+
+            textoBoton = "Adjuntar PDF a entregable",
+            onClick = onAdjuntarEvidencia
         )
 
         // ======================================

@@ -1,27 +1,49 @@
 package cl.duoc.tutorvirtual.data
 
 import android.content.Context
+
 import cl.duoc.tutorvirtual.data.local.EntregableEntity
 import cl.duoc.tutorvirtual.data.local.EsucarDatabase
 import cl.duoc.tutorvirtual.data.local.EtapaEntity
+import cl.duoc.tutorvirtual.data.local.EvidenciaEntity
+
 import kotlinx.coroutines.flow.Flow
+
+// ======================================================
+// REPOSITORIO ROOM - TUTOR VIRTUAL ESUCAR
+//
+// Gestiona:
+// 1. Etapas metodologicas
+// 2. Entregables academicos
+// 3. Evidencias: fotos y documentos PDF
+//
+// Conserva las funciones anteriores.
+// ======================================================
 
 class EsucarRoomRepository(context: Context) {
 
+    // ==============================================
     // CONEXION CON SQLITE MEDIANTE ROOM
+    // ==============================================
+
     private val database =
         EsucarDatabase.obtenerInstancia(
             context.applicationContext
         )
 
-    private val etapaDao = database.etapaDao()
+    private val etapaDao =
+        database.etapaDao()
 
     private val entregableDao =
         database.entregableDao()
 
-    // =========================================
+    // NUEVO: DAO DE EVIDENCIAS
+    private val evidenciaDao =
+        database.evidenciaDao()
+
+    // ==============================================
     // ETAPAS METODOLOGICAS
-    // =========================================
+    // ==============================================
 
     // Cargar las cinco etapas sin duplicarlas
     suspend fun inicializarEtapas() {
@@ -45,6 +67,7 @@ class EsucarRoomRepository(context: Context) {
 
     // Consultar etapas en tiempo real
     fun observarEtapas(): Flow<List<EtapaEntity>> {
+
         return etapaDao.obtenerTodasLasEtapas()
     }
 
@@ -52,6 +75,7 @@ class EsucarRoomRepository(context: Context) {
     suspend fun obtenerEtapaPorId(
         id: Int
     ): EtapaEntity? {
+
         return etapaDao.obtenerEtapaPorId(id)
     }
 
@@ -60,6 +84,7 @@ class EsucarRoomRepository(context: Context) {
         etapaId: Int,
         nuevoEstado: String
     ) {
+
         etapaDao.actualizarEstado(
             etapaId,
             nuevoEstado
@@ -68,17 +93,19 @@ class EsucarRoomRepository(context: Context) {
 
     // Contar etapas almacenadas
     suspend fun contarEtapas(): Int {
+
         return etapaDao.contarEtapas()
     }
 
-    // =========================================
+    // ==============================================
     // ENTREGABLES ACADEMICOS
-    // =========================================
+    // ==============================================
 
     // Consultar entregables por etapa
     fun observarEntregables(
         etapaId: Int
     ): Flow<List<EntregableEntity>> {
+
         return entregableDao.obtenerPorEtapa(etapaId)
     }
 
@@ -86,6 +113,7 @@ class EsucarRoomRepository(context: Context) {
     suspend fun guardarEntregable(
         entregable: EntregableEntity
     ): Long {
+
         return entregableDao.insertar(entregable)
     }
 
@@ -93,6 +121,7 @@ class EsucarRoomRepository(context: Context) {
     suspend fun actualizarEntregable(
         entregable: EntregableEntity
     ) {
+
         entregableDao.actualizar(entregable)
     }
 
@@ -101,21 +130,120 @@ class EsucarRoomRepository(context: Context) {
         entregableId: Int,
         nuevoEstado: String
     ) {
+
         entregableDao.actualizarEstado(
             entregableId,
             nuevoEstado
         )
     }
 
-    // =========================================
-    // NUEVA FUNCIONALIDAD: ELIMINAR ENTREGABLE
-    // =========================================
-
+    // Eliminar entregable
     suspend fun eliminarEntregable(
         entregable: EntregableEntity
     ) {
-        // Room elimina el registro correspondiente
-        // al identificador del entregable.
+
+        // Por la clave foranea ON DELETE CASCADE,
+        // Room tambien eliminara los registros
+        // de evidencias vinculados al entregable.
+        //
+        // Los archivos fisicos requieren
+        // una limpieza independiente.
+
         entregableDao.eliminar(entregable)
+    }
+
+    // ==============================================
+    // EVIDENCIAS ACADEMICAS
+    // ==============================================
+
+    // ----------------------------------------------
+    // CONSULTAR EVIDENCIAS DE UN ENTREGABLE
+    // ----------------------------------------------
+
+    fun observarEvidencias(
+        entregableId: Int
+    ): Flow<List<EvidenciaEntity>> {
+
+        return evidenciaDao.obtenerPorEntregable(
+            entregableId
+        )
+    }
+
+    // ----------------------------------------------
+    // CONSULTAR EVIDENCIA POR ID
+    // ----------------------------------------------
+
+    suspend fun obtenerEvidenciaPorId(
+        evidenciaId: Int
+    ): EvidenciaEntity? {
+
+        return evidenciaDao.obtenerPorId(
+            evidenciaId
+        )
+    }
+
+    // ----------------------------------------------
+    // GUARDAR REFERENCIA DE UNA EVIDENCIA
+    // ----------------------------------------------
+
+    suspend fun guardarEvidencia(
+        evidencia: EvidenciaEntity
+    ): Long {
+
+        require(evidencia.entregableId > 0) {
+            "La evidencia necesita un entregable válido."
+        }
+
+        require(evidencia.nombreArchivo.isNotBlank()) {
+            "El nombre del archivo es obligatorio."
+        }
+
+        require(
+            evidencia.tipo == "PDF" ||
+                    evidencia.tipo == "FOTO"
+        ) {
+            "El tipo de evidencia debe ser PDF o FOTO."
+        }
+
+        require(evidencia.uriArchivo.isNotBlank()) {
+            "La referencia del archivo es obligatoria."
+        }
+
+        return evidenciaDao.insertar(
+            evidencia
+        )
+    }
+
+    // ----------------------------------------------
+    // CONTAR EVIDENCIAS POR ENTREGABLE
+    // ----------------------------------------------
+
+    suspend fun contarEvidencias(
+        entregableId: Int
+    ): Int {
+
+        return evidenciaDao.contarPorEntregable(
+            entregableId
+        )
+    }
+
+    // ----------------------------------------------
+    // ELIMINAR REFERENCIA DE EVIDENCIA
+    // ----------------------------------------------
+
+    suspend fun eliminarEvidencia(
+        evidencia: EvidenciaEntity
+    ) {
+
+        // Elimina el registro de Room.
+        //
+        // Si es una fotografia almacenada
+        // en un archivo privado de la app,
+        // su archivo fisico debera eliminarse
+        // por separado.
+
+        evidenciaDao.eliminar(
+            evidencia
+        )
     }
 }

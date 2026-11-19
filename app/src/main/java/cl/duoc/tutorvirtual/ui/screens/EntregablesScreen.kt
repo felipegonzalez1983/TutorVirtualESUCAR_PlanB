@@ -1,7 +1,10 @@
 package cl.duoc.tutorvirtual.ui.screens
 
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,32 +13,54 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+
 import androidx.compose.material3.*
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+
 import cl.duoc.tutorvirtual.data.EsucarRoomRepository
 import cl.duoc.tutorvirtual.data.local.EntregableEntity
+import cl.duoc.tutorvirtual.data.local.EvidenciaEntity
 import cl.duoc.tutorvirtual.model.Etapa
 import cl.duoc.tutorvirtual.ui.theme.LocalColoresEsucar
 import cl.duoc.tutorvirtual.viewmodel.EntregablesViewModel
 import cl.duoc.tutorvirtual.viewmodel.RegistroEntregableViewModel
+import cl.duoc.tutorvirtual.viewmodel.EvidenciasViewModel
+
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// ==================================================
-// ESTADOS DISPONIBLES
-// ==================================================
+// ======================================================
+// TUTOR VIRTUAL ESUCAR
+// MIS ENTREGABLES Y EVIDENCIAS ACADEMICAS
+//
+// Incluye:
+// - Estados de etapas
+// - Listado de entregables Room
+// - Cambio de estado del entregable
+// - Edicion de titulo, descripcion y fecha
+// - Eliminacion con confirmacion
+// - Listado de PDF vinculados desde Room
+// - Apertura de PDF mediante Android
+// - Eliminacion de adjuntos con confirmacion
+//
+// Conserva la base de datos existente.
+// ======================================================
 
 private val opcionesEstado = listOf(
     "Por iniciar",
@@ -44,9 +69,9 @@ private val opcionesEstado = listOf(
     "Aprobado"
 )
 
-// ==================================================
-// VIEWMODEL DE OPERACIONES SOBRE DOCUMENTOS
-// ==================================================
+// ======================================================
+// VIEWMODEL DE OPERACIONES SOBRE ENTREGABLES
+// ======================================================
 
 class EstadoDocumentoViewModel(
     application: Application
@@ -56,10 +81,15 @@ class EstadoDocumentoViewModel(
         application.applicationContext
     )
 
+    // ==============================================
+    // CAMBIAR ESTADO
+    // ==============================================
+
     suspend fun cambiarEstadoDocumento(
         entregableId: Int,
         nuevoEstado: String
     ) {
+
         require(entregableId > 0) {
             "Identificador inválido"
         }
@@ -69,6 +99,7 @@ class EstadoDocumentoViewModel(
         }
 
         withContext(Dispatchers.IO) {
+
             repository.actualizarEstadoEntregable(
                 entregableId,
                 nuevoEstado
@@ -80,6 +111,10 @@ class EstadoDocumentoViewModel(
             "Estado actualizado: documento $entregableId"
         )
     }
+
+    // ==============================================
+    // EDITAR ENTREGABLE
+    // ==============================================
 
     suspend fun editarDocumento(
         entregable: EntregableEntity,
@@ -105,7 +140,9 @@ class EstadoDocumentoViewModel(
         }
 
         return try {
+
             withContext(Dispatchers.IO) {
+
                 repository.actualizarEntregable(
                     entregable.copy(
                         titulo = titulo,
@@ -118,9 +155,11 @@ class EstadoDocumentoViewModel(
             null
 
         } catch (e: CancellationException) {
+
             throw e
 
         } catch (e: Exception) {
+
             Log.e(
                 "ESUCAR_DATABASE",
                 "Error al editar documento",
@@ -131,15 +170,23 @@ class EstadoDocumentoViewModel(
         }
     }
 
+    // ==============================================
+    // ELIMINAR ENTREGABLE
+    // ==============================================
+
     suspend fun eliminarDocumento(
         entregable: EntregableEntity
     ) {
+
         require(entregable.id > 0) {
             "Identificador inválido"
         }
 
         withContext(Dispatchers.IO) {
-            repository.eliminarEntregable(entregable)
+
+            repository.eliminarEntregable(
+                entregable
+            )
         }
 
         Log.i(
@@ -148,37 +195,50 @@ class EstadoDocumentoViewModel(
         )
     }
 
-    private fun fechaValida(fecha: String): Boolean {
+    // ==============================================
+    // VALIDACION DE FECHA
+    // ==============================================
 
-        if (!Regex("""\d{4}-\d{2}-\d{2}""").matches(fecha)) {
+    private fun fechaValida(
+        fecha: String
+    ): Boolean {
+
+        if (
+            !Regex("""\d{4}-\d{2}-\d{2}""")
+                .matches(fecha)
+        ) {
             return false
         }
 
         return try {
+
             val formato = SimpleDateFormat(
                 "yyyy-MM-dd",
                 Locale.US
             )
 
             formato.isLenient = false
+
             formato.parse(fecha) != null
 
         } catch (e: Exception) {
+
             false
         }
     }
 }
 
-// ==================================================
+// ======================================================
 // PANTALLA PRINCIPAL
-// ==================================================
+// ======================================================
 
 @Composable
 fun EntregablesScreen(
     modifier: Modifier = Modifier,
     entregablesViewModel: EntregablesViewModel = viewModel(),
     registroViewModel: RegistroEntregableViewModel = viewModel(),
-    estadoDocumentoViewModel: EstadoDocumentoViewModel = viewModel()
+    estadoDocumentoViewModel: EstadoDocumentoViewModel = viewModel(),
+    evidenciasViewModel: EvidenciasViewModel = viewModel()
 ) {
 
     val colores = LocalColoresEsucar.current
@@ -196,32 +256,45 @@ fun EntregablesScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+
             contentPadding = PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
                 top = 20.dp,
                 bottom = 110.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+            verticalArrangement =
+                Arrangement.spacedBy(16.dp)
         ) {
 
-            // ENCABEZADO INSTITUCIONAL
+            // ======================================
+            // ENCABEZADO
+            // ======================================
+
             item {
+
                 Surface(
                     color = colores.encabezado,
+
                     shape = RoundedCornerShape(24.dp),
+
                     border = if (altoContraste) {
                         BorderStroke(1.dp, colores.borde)
                     } else {
                         null
                     }
                 ) {
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+
+                        verticalArrangement =
+                            Arrangement.spacedBy(12.dp)
                     ) {
+
                         Text(
                             text = "ESUCAR · SEGUIMIENTO",
                             color = colores.acento,
@@ -240,6 +313,7 @@ fun EntregablesScreen(
                         Text(
                             text = "Consulta y administra " +
                                     "tus documentos académicos.",
+
                             color = colores.textoEncabezado,
                             fontSize = 14.sp,
                             lineHeight = 21.sp
@@ -249,6 +323,7 @@ fun EntregablesScreen(
             }
 
             item {
+
                 Text(
                     text = "Seguimiento de etapas",
                     color = colores.texto,
@@ -257,7 +332,10 @@ fun EntregablesScreen(
                 )
             }
 
+            // ======================================
             // CINCO ETAPAS METODOLOGICAS
+            // ======================================
+
             items(
                 items = entregablesViewModel.etapas,
                 key = { it.id }
@@ -267,30 +345,44 @@ fun EntregablesScreen(
                     etapa = etapa,
                     entregablesViewModel = entregablesViewModel,
                     registroViewModel = registroViewModel,
-                    estadoDocumentoViewModel = estadoDocumentoViewModel,
+                    estadoDocumentoViewModel =
+                        estadoDocumentoViewModel,
+                    evidenciasViewModel = evidenciasViewModel,
                     snackbarHostState = snackbarHostState
                 )
             }
 
-            // AVISO
+            // ======================================
+            // AVISO ACADEMICO
+            // ======================================
+
             item {
+
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
+
                     color = colores.tarjeta,
+
                     shape = RoundedCornerShape(16.dp),
+
                     border = if (altoContraste) {
                         BorderStroke(1.dp, colores.borde)
                     } else {
                         null
                     }
                 ) {
+
                     Text(
-                        text = "Los estados se registran manualmente " +
-                                "como seguimiento personal. Seleccionar " +
-                                "'Aprobado' no constituye una aprobación " +
+                        text = "Los estados se registran " +
+                                "manualmente como seguimiento " +
+                                "personal. Seleccionar 'Aprobado' " +
+                                "no constituye una aprobación " +
                                 "oficial de ESUCAR.",
+
                         modifier = Modifier.padding(16.dp),
+
                         color = colores.textoSecundario,
+
                         fontSize = 12.sp,
                         lineHeight = 19.sp
                     )
@@ -298,19 +390,27 @@ fun EntregablesScreen(
             }
         }
 
-        // CONFIRMACIONES
+        // ==========================================
+        // MENSAJES
+        // ==========================================
+
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
+
+            modifier = Modifier.align(
+                Alignment.BottomCenter
+            )
         ) { data ->
 
             Snackbar(
                 snackbarData = data,
+
                 containerColor = if (altoContraste) {
                     Color.Yellow
                 } else {
                     colores.encabezado
                 },
+
                 contentColor = if (altoContraste) {
                     Color.Black
                 } else {
@@ -321,9 +421,9 @@ fun EntregablesScreen(
     }
 }
 
-// ==================================================
+// ======================================================
 // TARJETA DE ETAPA
-// ==================================================
+// ======================================================
 
 @Composable
 private fun TarjetaEtapaEntregables(
@@ -331,6 +431,7 @@ private fun TarjetaEtapaEntregables(
     entregablesViewModel: EntregablesViewModel,
     registroViewModel: RegistroEntregableViewModel,
     estadoDocumentoViewModel: EstadoDocumentoViewModel,
+    evidenciasViewModel: EvidenciasViewModel,
     snackbarHostState: SnackbarHostState
 ) {
 
@@ -342,7 +443,9 @@ private fun TarjetaEtapaEntregables(
         entregablesViewModel,
         etapa.id
     ) {
-        entregablesViewModel.observarEstado(etapa.id)
+        entregablesViewModel.observarEstado(
+            etapa.id
+        )
     }
 
     val estado by flujoEstado.collectAsState(
@@ -353,7 +456,9 @@ private fun TarjetaEtapaEntregables(
         registroViewModel,
         etapa.id
     ) {
-        registroViewModel.observarEntregables(etapa.id)
+        registroViewModel.observarEntregables(
+            etapa.id
+        )
     }
 
     val documentos by flujoDocumentos.collectAsState(
@@ -370,10 +475,13 @@ private fun TarjetaEtapaEntregables(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+
         colors = CardDefaults.cardColors(
             containerColor = colores.tarjeta
         ),
+
         shape = RoundedCornerShape(18.dp),
+
         border = if (altoContraste) {
             BorderStroke(1.dp, colores.borde)
         } else {
@@ -385,33 +493,49 @@ private fun TarjetaEtapaEntregables(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+
+            verticalArrangement =
+                Arrangement.spacedBy(14.dp)
         ) {
 
+            // ======================================
             // TITULO DE ETAPA
+            // ======================================
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(12.dp)
             ) {
+
                 Surface(
                     color = if (altoContraste) {
                         Color.Yellow
                     } else {
                         Color(0xFFE8EFE9)
                     },
+
                     shape = RoundedCornerShape(12.dp)
                 ) {
+
                     Box(
                         modifier = Modifier.size(46.dp),
+
                         contentAlignment = Alignment.Center
                     ) {
+
                         Text(
-                            text = etapa.id.toString().padStart(2, '0'),
+                            text = etapa.id
+                                .toString()
+                                .padStart(2, '0'),
+
                             color = if (altoContraste) {
                                 Color.Black
                             } else {
                                 colores.texto
                             },
+
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -435,7 +559,9 @@ private fun TarjetaEtapaEntregables(
                 lineHeight = 21.sp
             )
 
-            HorizontalDivider(color = colores.borde)
+            HorizontalDivider(
+                color = colores.borde
+            )
 
             Text(
                 text = "Estado actual de la etapa",
@@ -443,43 +569,61 @@ private fun TarjetaEtapaEntregables(
                 fontSize = 13.sp
             )
 
-            IndicadorEstado(estado = estado)
+            IndicadorEstado(
+                estado = estado
+            )
+
+            // ======================================
+            // CAMBIAR ESTADO DE ETAPA
+            // ======================================
 
             Button(
                 onClick = {
                     mostrarEstadosEtapa = true
                 },
+
                 enabled = !guardandoEtapa,
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp),
+
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (altoContraste) {
                         Color.Yellow
                     } else {
                         colores.encabezado
                     },
+
                     contentColor = if (altoContraste) {
                         Color.Black
                     } else {
                         Color.White
                     }
                 ),
+
                 shape = RoundedCornerShape(12.dp)
             ) {
+
                 Text(
                     text = if (guardandoEtapa) {
                         "Guardando..."
                     } else {
                         "Cambiar estado de etapa"
                     },
+
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            HorizontalDivider(color = colores.borde)
+            HorizontalDivider(
+                color = colores.borde
+            )
 
+            // ======================================
             // DOCUMENTOS REGISTRADOS
+            // ======================================
+
             Text(
                 text = "Documentos registrados",
                 color = colores.texto,
@@ -498,6 +642,7 @@ private fun TarjetaEtapaEntregables(
                 Text(
                     text = "Todavía no hay documentos " +
                             "registrados para esta etapa.",
+
                     color = colores.textoSecundario,
                     fontSize = 13.sp
                 )
@@ -505,11 +650,17 @@ private fun TarjetaEtapaEntregables(
             } else {
 
                 documentos.forEach { documento ->
+
                     key(documento.id) {
+
                         TarjetaDocumentoRegistrado(
                             entregable = documento,
-                            estadoDocumentoViewModel = estadoDocumentoViewModel,
-                            snackbarHostState = snackbarHostState
+                            estadoDocumentoViewModel =
+                                estadoDocumentoViewModel,
+                            evidenciasViewModel =
+                                evidenciasViewModel,
+                            snackbarHostState =
+                                snackbarHostState
                         )
                     }
                 }
@@ -517,13 +668,17 @@ private fun TarjetaEtapaEntregables(
         }
     }
 
-    // DIALOGO: ESTADO DE ETAPA
+    // ==============================================
+    // DIALOGO DE ESTADO DE ETAPA
+    // ==============================================
+
     if (mostrarEstadosEtapa) {
 
         AlertDialog(
             onDismissRequest = {
                 mostrarEstadosEtapa = false
             },
+
             containerColor = colores.tarjeta,
             titleContentColor = colores.texto,
             textContentColor = colores.texto,
@@ -533,22 +688,29 @@ private fun TarjetaEtapaEntregables(
             },
 
             text = {
+
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement =
+                        Arrangement.spacedBy(4.dp)
                 ) {
+
                     Text(
                         text = etapa.titulo,
                         color = colores.textoSecundario
                     )
 
                     opcionesEstado.forEach { opcion ->
+
                         OutlinedButton(
                             onClick = {
+
                                 mostrarEstadosEtapa = false
                                 guardandoEtapa = true
 
                                 scope.launch {
+
                                     try {
+
                                         entregablesViewModel.guardarEstado(
                                             etapa.id,
                                             opcion
@@ -559,27 +721,35 @@ private fun TarjetaEtapaEntregables(
                                         )
 
                                     } catch (e: CancellationException) {
+
                                         throw e
 
                                     } catch (e: Exception) {
+
                                         snackbarHostState.showSnackbar(
                                             "No se pudo guardar el estado"
                                         )
 
                                     } finally {
+
                                         guardandoEtapa = false
                                     }
                                 }
                             },
+
                             modifier = Modifier.fillMaxWidth(),
+
                             border = BorderStroke(
                                 if (altoContraste) 2.dp else 1.dp,
                                 colores.borde
                             ),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = colores.texto
-                            )
+
+                            colors =
+                                ButtonDefaults.outlinedButtonColors(
+                                    contentColor = colores.texto
+                                )
                         ) {
+
                             Text(
                                 text = if (opcion == estado) {
                                     "✓ $opcion"
@@ -593,11 +763,13 @@ private fun TarjetaEtapaEntregables(
             },
 
             confirmButton = {
+
                 TextButton(
                     onClick = {
                         mostrarEstadosEtapa = false
                     }
                 ) {
+
                     Text(
                         text = "Cancelar",
                         color = colores.texto
@@ -608,14 +780,15 @@ private fun TarjetaEtapaEntregables(
     }
 }
 
-// ==================================================
-// TARJETA DE DOCUMENTO INDIVIDUAL
-// ==================================================
+// ======================================================
+// TARJETA DE ENTREGABLE INDIVIDUAL
+// ======================================================
 
 @Composable
 private fun TarjetaDocumentoRegistrado(
     entregable: EntregableEntity,
     estadoDocumentoViewModel: EstadoDocumentoViewModel,
+    evidenciasViewModel: EvidenciasViewModel,
     snackbarHostState: SnackbarHostState
 ) {
 
@@ -639,14 +812,39 @@ private fun TarjetaDocumentoRegistrado(
         mutableStateOf(false)
     }
 
+    // ==============================================
+    // NUEVO: EVIDENCIAS DE ESTE ENTREGABLE
+    // ==============================================
+
+    val flujoEvidencias = remember(
+        evidenciasViewModel,
+        entregable.id
+    ) {
+
+        evidenciasViewModel.observarEvidencias(
+            entregable.id
+        )
+    }
+
+    val evidencias by flujoEvidencias.collectAsState(
+        initial = emptyList()
+    )
+
+    // ==============================================
+    // CONTENIDO DEL ENTREGABLE
+    // ==============================================
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
+
         color = if (altoContraste) {
             Color.Black
         } else {
             colores.fondo
         },
+
         shape = RoundedCornerShape(14.dp),
+
         border = BorderStroke(
             if (altoContraste) 2.dp else 1.dp,
             colores.borde
@@ -657,7 +855,9 @@ private fun TarjetaDocumentoRegistrado(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+
+            verticalArrangement =
+                Arrangement.spacedBy(10.dp)
         ) {
 
             Text(
@@ -675,7 +875,9 @@ private fun TarjetaDocumentoRegistrado(
             )
 
             Text(
-                text = "Fecha de entrega: ${entregable.fechaEntrega}",
+                text = "Fecha de entrega: " +
+                        entregable.fechaEntrega,
+
                 color = colores.texto,
                 fontSize = 12.sp
             )
@@ -686,72 +888,154 @@ private fun TarjetaDocumentoRegistrado(
                 fontSize = 12.sp
             )
 
-            IndicadorEstado(estado = entregable.estado)
+            IndicadorEstado(
+                estado = entregable.estado
+            )
 
+            // ======================================
+            // NUEVO: DOCUMENTOS ADJUNTOS
+            // ======================================
+
+            HorizontalDivider(
+                color = colores.borde
+            )
+
+            Text(
+                text = "Evidencias adjuntas",
+                color = colores.texto,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "${evidencias.size} archivo(s) adjunto(s)",
+
+                color = colores.textoSecundario,
+                fontSize = 12.sp
+            )
+
+            if (evidencias.isEmpty()) {
+
+                Text(
+                    text = "Este entregable todavía " +
+                            "no tiene evidencias adjuntas.",
+
+                    color = colores.textoSecundario,
+                    fontSize = 12.sp
+                )
+
+            } else {
+
+                evidencias.forEach { evidencia ->
+
+                    key(evidencia.id) {
+
+                        TarjetaEvidenciaAdjunta(
+                            evidencia = evidencia,
+                            evidenciasViewModel =
+                                evidenciasViewModel,
+                            snackbarHostState =
+                                snackbarHostState
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(
+                color = colores.borde
+            )
+
+            // ======================================
             // CAMBIAR ESTADO
+            // ======================================
+
             OutlinedButton(
                 onClick = {
                     mostrarEstados = true
                 },
+
                 enabled = !guardando,
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = colores.texto
-                ),
+
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = colores.texto
+                    ),
+
                 border = BorderStroke(
                     if (altoContraste) 2.dp else 1.dp,
                     colores.borde
                 )
             ) {
+
                 Text(
                     text = "Cambiar estado del documento",
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
+            // ======================================
             // EDITAR DOCUMENTO
+            // ======================================
+
             OutlinedButton(
                 onClick = {
                     mostrarEdicion = true
                 },
+
                 enabled = !guardando,
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = colores.texto
-                ),
+
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = colores.texto
+                    ),
+
                 border = BorderStroke(
                     if (altoContraste) 2.dp else 1.dp,
                     colores.borde
                 )
             ) {
+
                 Text(
                     text = "Editar documento",
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
-            // ELIMINAR DOCUMENTO
+            // ======================================
+            // ELIMINAR ENTREGABLE
+            // ======================================
+
             OutlinedButton(
                 onClick = {
                     mostrarEliminar = true
                 },
+
                 enabled = !guardando,
+
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (altoContraste) {
-                        Color.Yellow
-                    } else {
-                        Color(0xFFB42318)
-                    }
-                ),
+
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (altoContraste) {
+                            Color.Yellow
+                        } else {
+                            Color(0xFFB42318)
+                        }
+                    ),
+
                 border = BorderStroke(
                     if (altoContraste) 2.dp else 1.dp,
+
                     if (altoContraste) {
                         Color.Yellow
                     } else {
@@ -759,17 +1043,29 @@ private fun TarjetaDocumentoRegistrado(
                     }
                 )
             ) {
+
                 Text(
                     text = "Eliminar documento",
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            if (entregable.observaciones.isNotBlank()) {
-                HorizontalDivider(color = colores.borde)
+            // ======================================
+            // OBSERVACIONES
+            // ======================================
+
+            if (
+                entregable.observaciones.isNotBlank()
+            ) {
+
+                HorizontalDivider(
+                    color = colores.borde
+                )
 
                 Text(
-                    text = "Observaciones: ${entregable.observaciones}",
+                    text = "Observaciones: " +
+                            entregable.observaciones,
+
                     color = colores.textoSecundario,
                     fontSize = 12.sp
                 )
@@ -777,13 +1073,17 @@ private fun TarjetaDocumentoRegistrado(
         }
     }
 
-    // DIALOGO: ESTADO DEL DOCUMENTO
+    // ==============================================
+    // DIALOGO DE ESTADO DEL DOCUMENTO
+    // ==============================================
+
     if (mostrarEstados) {
 
         AlertDialog(
             onDismissRequest = {
                 mostrarEstados = false
             },
+
             containerColor = colores.tarjeta,
             titleContentColor = colores.texto,
             textContentColor = colores.texto,
@@ -793,56 +1093,78 @@ private fun TarjetaDocumentoRegistrado(
             },
 
             text = {
+
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement =
+                        Arrangement.spacedBy(6.dp)
                 ) {
+
                     Text(
                         text = entregable.titulo,
                         color = colores.textoSecundario
                     )
 
                     opcionesEstado.forEach { opcion ->
+
                         OutlinedButton(
                             onClick = {
+
                                 mostrarEstados = false
                                 guardando = true
 
                                 scope.launch {
+
                                     try {
+
                                         estadoDocumentoViewModel
                                             .cambiarEstadoDocumento(
                                                 entregable.id,
                                                 opcion
                                             )
 
-                                        guardando = false
-
                                         snackbarHostState.showSnackbar(
                                             "Estado del documento actualizado"
                                         )
 
                                     } catch (e: CancellationException) {
+
                                         throw e
 
                                     } catch (e: Exception) {
-                                        guardando = false
 
                                         snackbarHostState.showSnackbar(
                                             "No se pudo actualizar el estado"
                                         )
+
+                                    } finally {
+
+                                        guardando = false
                                     }
                                 }
                             },
+
                             modifier = Modifier.fillMaxWidth(),
-                            border = BorderStroke(1.dp, colores.borde),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = colores.texto
-                            )
+
+                            border = BorderStroke(
+                                1.dp,
+                                colores.borde
+                            ),
+
+                            colors =
+                                ButtonDefaults.outlinedButtonColors(
+                                    contentColor = colores.texto
+                                )
                         ) {
+
                             Text(
-                                text = if (entregable.estado == opcion) {
+                                text = if (
+                                    entregable.estado == opcion
+                                ) {
+
                                     "✓ $opcion"
+
                                 } else {
+
                                     opcion
                                 }
                             )
@@ -852,11 +1174,13 @@ private fun TarjetaDocumentoRegistrado(
             },
 
             confirmButton = {
+
                 TextButton(
                     onClick = {
                         mostrarEstados = false
                     }
                 ) {
+
                     Text(
                         text = "Cancelar",
                         color = colores.texto
@@ -866,7 +1190,10 @@ private fun TarjetaDocumentoRegistrado(
         )
     }
 
-    // DIALOGO: EDICION DE DOCUMENTO
+    // ==============================================
+    // DIALOGO DE EDICION
+    // ==============================================
+
     if (mostrarEdicion) {
 
         DialogoEditarDocumento(
@@ -878,40 +1205,53 @@ private fun TarjetaDocumentoRegistrado(
             },
 
             onGuardar = { titulo, descripcion, fecha ->
+
                 if (!guardando) {
+
                     guardando = true
 
                     scope.launch {
-                        try {
-                            val error = estadoDocumentoViewModel
-                                .editarDocumento(
-                                    entregable = entregable,
-                                    nuevoTitulo = titulo,
-                                    nuevaDescripcion = descripcion,
-                                    nuevaFecha = fecha
-                                )
 
-                            guardando = false
+                        try {
+
+                            val error =
+                                estadoDocumentoViewModel
+                                    .editarDocumento(
+                                        entregable = entregable,
+                                        nuevoTitulo = titulo,
+                                        nuevaDescripcion =
+                                            descripcion,
+                                        nuevaFecha = fecha
+                                    )
 
                             if (error == null) {
+
                                 mostrarEdicion = false
 
                                 snackbarHostState.showSnackbar(
                                     "Documento actualizado correctamente"
                                 )
+
                             } else {
-                                snackbarHostState.showSnackbar(error)
+
+                                snackbarHostState.showSnackbar(
+                                    error
+                                )
                             }
 
                         } catch (e: CancellationException) {
+
                             throw e
 
                         } catch (e: Exception) {
-                            guardando = false
 
                             snackbarHostState.showSnackbar(
                                 "No se pudo editar el documento"
                             )
+
+                        } finally {
+
+                            guardando = false
                         }
                     }
                 }
@@ -919,15 +1259,20 @@ private fun TarjetaDocumentoRegistrado(
         )
     }
 
-    // DIALOGO: CONFIRMACION DE ELIMINACION
+    // ==============================================
+    // DIALOGO DE ELIMINACION DE ENTREGABLE
+    // ==============================================
+
     if (mostrarEliminar) {
 
         AlertDialog(
             onDismissRequest = {
+
                 if (!guardando) {
                     mostrarEliminar = false
                 }
             },
+
             containerColor = colores.tarjeta,
             titleContentColor = colores.texto,
             textContentColor = colores.texto,
@@ -937,9 +1282,12 @@ private fun TarjetaDocumentoRegistrado(
             },
 
             text = {
+
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement =
+                        Arrangement.spacedBy(12.dp)
                 ) {
+
                     Text(
                         text = "Estás a punto de eliminar:",
                         color = colores.textoSecundario
@@ -952,9 +1300,12 @@ private fun TarjetaDocumentoRegistrado(
                     )
 
                     Text(
-                        text = "Esta acción eliminará el registro " +
-                                "de la base de datos local y no se " +
-                                "puede deshacer.",
+                        text = "Esta acción eliminará el " +
+                                "registro del entregable y sus " +
+                                "referencias de evidencias " +
+                                "en la base de datos local. " +
+                                "No se puede deshacer.",
+
                         color = colores.textoSecundario,
                         fontSize = 13.sp
                     )
@@ -962,59 +1313,75 @@ private fun TarjetaDocumentoRegistrado(
             },
 
             confirmButton = {
+
                 TextButton(
                     enabled = !guardando,
+
                     onClick = {
+
                         guardando = true
 
                         scope.launch {
+
                             try {
+
                                 estadoDocumentoViewModel
-                                    .eliminarDocumento(entregable)
+                                    .eliminarDocumento(
+                                        entregable
+                                    )
 
                                 mostrarEliminar = false
-                                guardando = false
 
                                 snackbarHostState.showSnackbar(
                                     "Documento eliminado correctamente"
                                 )
 
                             } catch (e: CancellationException) {
+
                                 throw e
 
                             } catch (e: Exception) {
-                                guardando = false
 
                                 snackbarHostState.showSnackbar(
                                     "No se pudo eliminar el documento"
                                 )
+
+                            } finally {
+
+                                guardando = false
                             }
                         }
                     }
                 ) {
+
                     Text(
                         text = if (guardando) {
                             "Eliminando..."
                         } else {
                             "Sí, eliminar"
                         },
+
                         color = if (altoContraste) {
                             Color.Yellow
                         } else {
                             Color(0xFFB42318)
                         },
+
                         fontWeight = FontWeight.Bold
                     )
                 }
             },
 
             dismissButton = {
+
                 TextButton(
                     enabled = !guardando,
+
                     onClick = {
                         mostrarEliminar = false
                     }
                 ) {
+
                     Text(
                         text = "Cancelar",
                         color = colores.texto
@@ -1025,9 +1392,316 @@ private fun TarjetaDocumentoRegistrado(
     }
 }
 
-// ==================================================
-// FORMULARIO DE EDICION
-// ==================================================
+// ======================================================
+// NUEVO: TARJETA DE EVIDENCIA ADJUNTA
+// ======================================================
+
+@Composable
+private fun TarjetaEvidenciaAdjunta(
+    evidencia: EvidenciaEntity,
+    evidenciasViewModel: EvidenciasViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+
+    val colores = LocalColoresEsucar.current
+    val altoContraste = colores.fondo == Color.Black
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var mostrarConfirmacion by remember {
+        mutableStateOf(false)
+    }
+
+    var eliminando by remember {
+        mutableStateOf(false)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+
+        color = colores.tarjeta,
+
+        shape = RoundedCornerShape(12.dp),
+
+        border = BorderStroke(
+            if (altoContraste) 2.dp else 1.dp,
+            colores.borde
+        )
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+
+            verticalArrangement =
+                Arrangement.spacedBy(10.dp)
+        ) {
+
+            // ======================================
+            // INFORMACION DEL ARCHIVO
+            // ======================================
+
+            Text(
+                text = if (evidencia.tipo == "PDF") {
+                    "PDF adjunto"
+                } else {
+                    "Fotografía adjunta"
+                },
+
+                color = colores.textoSecundario,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = evidencia.nombreArchivo,
+
+                color = colores.texto,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // ======================================
+            // ABRIR ARCHIVO
+            // ======================================
+
+            OutlinedButton(
+                onClick = {
+
+                    try {
+
+                        val uri = Uri.parse(
+                            evidencia.uriArchivo
+                        )
+
+                        val tipoMime =
+                            if (evidencia.tipo == "PDF") {
+
+                                "application/pdf"
+
+                            } else {
+
+                                "image/*"
+                            }
+
+                        val intent = Intent(
+                            Intent.ACTION_VIEW
+                        ).apply {
+
+                            setDataAndType(
+                                uri,
+                                tipoMime
+                            )
+
+                            addFlags(
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        }
+
+                        context.startActivity(intent)
+
+                    } catch (e: Exception) {
+
+                        scope.launch {
+
+                            snackbarHostState.showSnackbar(
+                                "No se pudo abrir el archivo. " +
+                                        "Comprueba que siga disponible " +
+                                        "en el dispositivo."
+                            )
+                        }
+                    }
+                },
+
+                enabled = !eliminando,
+
+                modifier = Modifier.fillMaxWidth(),
+
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = colores.texto
+                    ),
+
+                border = BorderStroke(
+                    1.dp,
+                    colores.borde
+                )
+            ) {
+
+                Text(
+                    text = if (evidencia.tipo == "PDF") {
+                        "Abrir PDF"
+                    } else {
+                        "Abrir fotografía"
+                    }
+                )
+            }
+
+            // ======================================
+            // ELIMINAR EVIDENCIA
+            // ======================================
+
+            OutlinedButton(
+                onClick = {
+                    mostrarConfirmacion = true
+                },
+
+                enabled = !eliminando,
+
+                modifier = Modifier.fillMaxWidth(),
+
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (altoContraste) {
+                            Color.Yellow
+                        } else {
+                            Color(0xFFB42318)
+                        }
+                    ),
+
+                border = BorderStroke(
+                    1.dp,
+
+                    if (altoContraste) {
+                        Color.Yellow
+                    } else {
+                        Color(0xFFB42318)
+                    }
+                )
+            ) {
+
+                Text(
+                    text = if (eliminando) {
+                        "Eliminando..."
+                    } else {
+                        "Eliminar adjunto"
+                    }
+                )
+            }
+        }
+    }
+
+    // ==============================================
+    // CONFIRMACION DE ELIMINACION
+    // ==============================================
+
+    if (mostrarConfirmacion) {
+
+        AlertDialog(
+            onDismissRequest = {
+
+                if (!eliminando) {
+                    mostrarConfirmacion = false
+                }
+            },
+
+            containerColor = colores.tarjeta,
+            titleContentColor = colores.texto,
+            textContentColor = colores.texto,
+
+            title = {
+                Text("¿Eliminar evidencia?")
+            },
+
+            text = {
+
+                Column(
+                    verticalArrangement =
+                        Arrangement.spacedBy(10.dp)
+                ) {
+
+                    Text(
+                        text = evidencia.nombreArchivo,
+                        fontWeight = FontWeight.Bold,
+                        color = colores.texto
+                    )
+
+                    Text(
+                        text = "Se eliminará este adjunto " +
+                                "del registro de ESUCAR. " +
+                                "El archivo original permanecerá " +
+                                "en el almacenamiento de Android.",
+
+                        color = colores.textoSecundario,
+                        fontSize = 13.sp
+                    )
+                }
+            },
+
+            confirmButton = {
+
+                TextButton(
+                    enabled = !eliminando,
+
+                    onClick = {
+
+                        eliminando = true
+
+                        evidenciasViewModel.eliminarEvidencia(
+                            evidencia = evidencia,
+
+                            onResultado = { correcto ->
+
+                                eliminando = false
+
+                                mostrarConfirmacion = false
+
+                                scope.launch {
+
+                                    snackbarHostState.showSnackbar(
+                                        if (correcto) {
+
+                                            "Adjunto eliminado correctamente"
+
+                                        } else {
+
+                                            "No se pudo eliminar el adjunto"
+                                        }
+                                    )
+                                }
+                            }
+                        )
+                    }
+                ) {
+
+                    Text(
+                        text = "Sí, eliminar",
+
+                        color = if (altoContraste) {
+                            Color.Yellow
+                        } else {
+                            Color(0xFFB42318)
+                        },
+
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+
+            dismissButton = {
+
+                TextButton(
+                    enabled = !eliminando,
+
+                    onClick = {
+                        mostrarConfirmacion = false
+                    }
+                ) {
+
+                    Text(
+                        text = "Cancelar",
+                        color = colores.texto
+                    )
+                }
+            }
+        )
+    }
+}
+
+// ======================================================
+// FORMULARIO DE EDICION DE ENTREGABLE
+// ======================================================
 
 @Composable
 private fun DialogoEditarDocumento(
@@ -1054,10 +1728,12 @@ private fun DialogoEditarDocumento(
 
     AlertDialog(
         onDismissRequest = {
+
             if (!guardando) {
                 onCancelar()
             }
         },
+
         containerColor = colores.tarjeta,
         titleContentColor = colores.texto,
         textContentColor = colores.texto,
@@ -1067,12 +1743,15 @@ private fun DialogoEditarDocumento(
         },
 
         text = {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 400.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+
+                verticalArrangement =
+                    Arrangement.spacedBy(12.dp)
             ) {
 
                 Text(
@@ -1081,71 +1760,130 @@ private fun DialogoEditarDocumento(
                     fontSize = 12.sp
                 )
 
+                // ==================================
+                // TITULO
+                // ==================================
+
                 OutlinedTextField(
                     value = titulo,
-                    onValueChange = { titulo = it },
-                    label = { Text("Título") },
+
+                    onValueChange = {
+                        titulo = it
+                    },
+
+                    label = {
+                        Text("Título")
+                    },
+
                     modifier = Modifier.fillMaxWidth(),
+
                     enabled = !guardando,
+
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = colores.texto,
-                        unfocusedTextColor = colores.texto,
-                        focusedContainerColor = colores.tarjeta,
-                        unfocusedContainerColor = colores.tarjeta
-                    )
+
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = colores.texto,
+                            unfocusedTextColor = colores.texto,
+                            focusedContainerColor = colores.tarjeta,
+                            unfocusedContainerColor = colores.tarjeta
+                        )
                 )
+
+                // ==================================
+                // DESCRIPCION
+                // ==================================
 
                 OutlinedTextField(
                     value = descripcion,
-                    onValueChange = { descripcion = it },
-                    label = { Text("Descripción") },
+
+                    onValueChange = {
+                        descripcion = it
+                    },
+
+                    label = {
+                        Text("Descripción")
+                    },
+
                     modifier = Modifier.fillMaxWidth(),
+
                     enabled = !guardando,
+
                     minLines = 3,
+
                     maxLines = 5,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = colores.texto,
-                        unfocusedTextColor = colores.texto,
-                        focusedContainerColor = colores.tarjeta,
-                        unfocusedContainerColor = colores.tarjeta
-                    )
+
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = colores.texto,
+                            unfocusedTextColor = colores.texto,
+                            focusedContainerColor = colores.tarjeta,
+                            unfocusedContainerColor = colores.tarjeta
+                        )
                 )
+
+                // ==================================
+                // FECHA
+                // ==================================
 
                 OutlinedTextField(
                     value = fecha,
-                    onValueChange = { fecha = it },
-                    label = { Text("Fecha de entrega") },
-                    placeholder = { Text("AAAA-MM-DD") },
+
+                    onValueChange = {
+                        fecha = it
+                    },
+
+                    label = {
+                        Text("Fecha de entrega")
+                    },
+
+                    placeholder = {
+                        Text("AAAA-MM-DD")
+                    },
+
                     supportingText = {
                         Text("Ejemplo: 2026-12-10")
                     },
+
                     modifier = Modifier.fillMaxWidth(),
+
                     enabled = !guardando,
+
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = colores.texto,
-                        unfocusedTextColor = colores.texto,
-                        focusedContainerColor = colores.tarjeta,
-                        unfocusedContainerColor = colores.tarjeta
-                    )
+
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = colores.texto,
+                            unfocusedTextColor = colores.texto,
+                            focusedContainerColor = colores.tarjeta,
+                            unfocusedContainerColor = colores.tarjeta
+                        )
                 )
             }
         },
 
         confirmButton = {
+
             TextButton(
                 enabled = !guardando,
+
                 onClick = {
-                    onGuardar(titulo, descripcion, fecha)
+
+                    onGuardar(
+                        titulo,
+                        descripcion,
+                        fecha
+                    )
                 }
             ) {
+
                 Text(
                     text = if (guardando) {
                         "Guardando..."
                     } else {
                         "Guardar cambios"
                     },
+
                     color = if (altoContraste) {
                         Color.Yellow
                     } else {
@@ -1156,10 +1894,12 @@ private fun DialogoEditarDocumento(
         },
 
         dismissButton = {
+
             TextButton(
                 enabled = !guardando,
                 onClick = onCancelar
             ) {
+
                 Text(
                     text = "Cancelar",
                     color = colores.texto
@@ -1169,9 +1909,9 @@ private fun DialogoEditarDocumento(
     )
 }
 
-// ==================================================
+// ======================================================
 // INDICADOR REUTILIZABLE DE ESTADO
-// ==================================================
+// ======================================================
 
 @Composable
 private fun IndicadorEstado(
@@ -1182,23 +1922,37 @@ private fun IndicadorEstado(
     val altoContraste = colores.fondo == Color.Black
 
     val fondo = if (altoContraste) {
+
         Color.Yellow
+
     } else {
+
         when (estado) {
+
             "Aprobado" -> Color(0xFFDCFCE7)
+
             "Enviado" -> Color(0xFFDBEAFE)
+
             "En desarrollo" -> Color(0xFFFFF4D6)
+
             else -> Color(0xFFE8EFE9)
         }
     }
 
     val texto = if (altoContraste) {
+
         Color.Black
+
     } else {
+
         when (estado) {
+
             "Aprobado" -> Color(0xFF166534)
+
             "Enviado" -> Color(0xFF1D4ED8)
+
             "En desarrollo" -> Color(0xFF875A13)
+
             else -> Color(0xFF174B35)
         }
     }
@@ -1207,12 +1961,15 @@ private fun IndicadorEstado(
         color = fondo,
         shape = RoundedCornerShape(50.dp)
     ) {
+
         Text(
             text = estado,
+
             modifier = Modifier.padding(
                 horizontal = 12.dp,
                 vertical = 7.dp
             ),
+
             color = texto,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
