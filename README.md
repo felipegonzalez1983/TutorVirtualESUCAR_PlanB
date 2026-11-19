@@ -1,73 +1,106 @@
-# Tutor Virtual ESUCAR — Plan B
+# Tutor Virtual ESUCAR
 
-**Aplicación móvil Android para el seguimiento académico, metodológico y documental de trabajos de título.**
+App Android para llevar el orden del trabajo de título en la Escuela de Suboficiales (ESUCAR): etapas, entregables, fechas del calendario y evidencias, todo en un solo lugar.
 
-Proyecto educativo desarrollado para la asignatura **Desarrollo de Aplicaciones Móviles (DSY1105)** de DUOC UC, utilizando Kotlin, Jetpack Compose y arquitectura MVVM.
+Es el proyecto de la **Evaluación Parcial 2** de **DESARROLLO DE APLICACIONES MOVILES_002V (DSY1105)**, DUOC UC. Profesor: Juan Azocar.
 
-> **Aviso institucional:** Tutor Virtual ESUCAR es un prototipo académico de demostración. No constituye una aplicación oficial ni autorizada por Carabineros de Chile. Los contenidos de ejemplo no representan necesariamente información institucional vigente.
+> Es un prototipo académico. No es una aplicación oficial de Carabineros de Chile ni de ESUCAR, y las cuentas de acceso son de prueba.
 
-## 1. Descripción del proyecto
+## Equipo Sivagon
 
-Tutor Virtual ESUCAR busca apoyar la organización del trabajo de título de estudiantes de la Escuela de Suboficiales de Carabineros de Chile.
-
-La aplicación permite consultar etapas metodológicas, gestionar entregables, organizar actividades académicas y registrar evidencias mediante documentos PDF y fotografías.
-
-### Origen del Plan B
-
-El proyecto comenzó como una versión individual de contingencia, desarrollada paralelamente al proyecto del equipo académico.
-
-Esta versión evolucionó con funcionalidades de persistencia local, gestión documental e integración de recursos nativos de Android.
-
-Actualmente se utiliza como base de desarrollo colaborativo para integrar mejoras de diseño y experiencia de usuario.
-
-## 2. Equipo de desarrollo
-
-| Integrante | Área de trabajo |
+| Integrante | En qué trabajó |
 |---|---|
-| Felipe González | Desarrollo Android, arquitectura, persistencia e integración |
-| Yanina Silva | Colaboración y modernización visual |
-| Vicente Valenzuela | Colaboración, pruebas y documentación |
+| Felipe González | Base del proyecto, arquitectura, Room y recursos nativos |
+| Vicente Valenzuela | Pruebas, documentación y apoyo en el desarrollo |
+| Yanina Silva | Diseño de la interfaz, integración y contenidos |
 
-Las responsabilidades podrán actualizarse conforme avance el proyecto.
+## De qué trata
 
-## 3. Tecnologías utilizadas
+Los estudiantes de ESUCAR tienen que cumplir etapas y entregas de Trabajo de Título I y II, y 
+la información está repartida en programas, calendarios y guías en PDF o Word. La app junta 
+todo eso: explica cada etapa, muestra los hitos del calendario 2026, responde dudas 
+frecuentes y deja registrar los avances con sus evidencias.
 
-| Tecnología | Uso |
-|---|---|
-| Kotlin | Lenguaje principal |
-| Android Studio | Entorno de desarrollo |
-| Jetpack Compose | Construcción de interfaces |
-| Material Design 3 | Componentes visuales |
-| MVVM | Separación de responsabilidades |
-| Room / SQLite | Almacenamiento local |
-| DataStore Preferences | Preferencias y persistencia de sesión |
-| Kotlin Coroutines / Flow | Operaciones asíncronas y datos reactivos |
-| MediaStore | Almacenamiento de fotografías |
-| Android Activity Result API | Cámara y selección de documentos |
-| HTTP / JSON | Consulta de novedades académicas |
-| Git / GitHub | Control de versiones y colaboración |
+## Qué se puede hacer en la app
 
-## 4. Funcionalidades implementadas
+**Inicio y navegación**
+- Pantalla de inicio con el avance general y accesos rápidos.
+- Barra inferior con Inicio, Etapas, Progreso y Más.
+- Transiciones suaves entre pantallas y barra de progreso animada.
 
-### 4.1. Etapas metodológicas
+**Etapas del trabajo**
+- Las 5 etapas con objetivo, actividades y formato de entrega.
+- Guía paso a paso para cada etapa.
+- Estado de cada etapa (por iniciar, en progreso, completado).
 
-- Listado de cinco etapas académicas.
-- Consulta del detalle de cada etapa.
-- Buscador de etapas.
-- Guía metodológica interactiva.
-- Navegación entre pantallas.
-- Actualización manual del estado de cada etapa.
+**Entregables y formularios**
+- Registrar avances con título, descripción, fecha y estado.
+- Cada campo tiene ícono, mensaje de error y confirmación cuando está bien.
+- Las reglas de validación están en `ValidacionEntregable`, separadas de las pantallas.
+- Listado de entregables y cambio de estado.
 
-### 4.2. Gestión de entregables
+**Información de apoyo**
+- Hitos y fechas del calendario académico 2026, con recordatorios.
+- Preguntas frecuentes por capítulo de la guía metodológica.
+- Pautas y rúbricas, y novedades académicas.
+- Modo de accesibilidad con alto contraste.
 
-- Registro de entregables académicos.
-- Edición de títulos, descripciones y fechas.
-- Cambio de estados: Por iniciar, En desarrollo, Enviado y Aprobado.
-- Eliminación de entregables con confirmación.
-- Persistencia local mediante Room.
-- Asociación de entregables con etapas metodológicas.
+**Recursos nativos del teléfono**
+- **Biometría:** verificación con huella o rostro en la sección Seguridad biométrica (Más).
+- **Cámara:** fotos como evidencia.
+- **Selector de documentos:** adjuntar PDF.
+- **GPS:** guarda la ubicación del trabajo de campo y la abre en el mapa.
+- **Notificaciones:** recordatorios de hitos.
 
-### 4.3. Evidencias PDF
+## Cómo está organizado
 
-- Selección de documentos mediante el selector nativo de Android.
-- Vinculación
+Usamos MVVM. Dentro de `app/src/main/java/cl/duoc/tutorvirtual`:
+
+```
+data/           Room, DataStore, repositorios, ubicación y biometría
+model/          Modelos de datos
+viewmodel/      Estado de las pantallas y reglas de validación
+navigation/     Inicio de sesión y paso a la app
+notifications/  Recordatorios
+ui/             Pantallas con Jetpack Compose y tema
+MainActivity.kt
+```
+
+**Datos guardados en el teléfono**
+- Room (versión 2): etapas, entregables y evidencias.
+- DataStore: sesión, estado de las etapas, accesibilidad y ubicación.
+
+## Para ejecutarla
+
+Necesitas Android Studio reciente con JDK 17 (el que trae por defecto), y un emulador o celular con Android 7.0 (API 24) o superior.
+
+1. Clona el repositorio:
+   ```
+   git clone https://github.com/felipegonzalez1983/TutorVirtualESUCAR_PlanB.git
+   ```
+2. Abre la carpeta en Android Studio y espera a que termine la sincronización de Gradle.
+3. Elige un emulador o conecta un celular con la depuración USB activada.
+4. Presiona **Run** (el botón verde).
+5. Ingresa con una cuenta de prueba:
+
+   | Identificador | Contraseña |
+   |---|---|
+   | DEMO-001 | Demo2026! |
+   | DEMO-002 | Demo2026! |
+   | DEMO-003 | Demo2026! |
+
+6. Acepta los permisos de cámara, ubicación y notificaciones cuando los pida.
+
+Si usas el emulador, para probar el GPS hay que fijar una ubicación en *Extended controls → Location*. La biometría necesita tener una huella o PIN configurado en el emulador.
+
+Las novedades se leen desde `contenido/actualizaciones.json` del repositorio, así que esa pantalla necesita internet. Si no hay conexión, muestra lo último que se descargó.
+
+## Cómo trabajamos
+
+- Código en GitHub, con commits por cada funcionalidad.
+- Tareas y reparto del trabajo en Trello: [enlace al tablero]
+
+## Cosas pendientes
+
+- Los criterios de las rúbricas son de ejemplo, no los oficiales de cada entrega.
+- Las fechas de entrega de cada etapa dependen del calendario de la escuela.

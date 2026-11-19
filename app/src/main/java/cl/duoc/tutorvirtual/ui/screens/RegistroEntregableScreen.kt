@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,8 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.duoc.tutorvirtual.ui.IconoEstadoCampo
 import cl.duoc.tutorvirtual.ui.theme.LocalColoresEsucar
 import cl.duoc.tutorvirtual.viewmodel.RegistroEntregableViewModel
+import cl.duoc.tutorvirtual.viewmodel.ValidacionEntregable
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,6 +61,15 @@ fun RegistroEntregableScreen(
     var guardando by remember {
         mutableStateOf(false)
     }
+
+    var intentoGuardar by remember {
+        mutableStateOf(false)
+    }
+
+    // Los mensajes salen de ValidacionEntregable, aquí solo se muestran
+    val errorTitulo = ValidacionEntregable.errorTitulo(titulo)
+    val errorDescripcion = ValidacionEntregable.errorDescripcion(descripcion)
+    val errorFecha = ValidacionEntregable.errorFecha(fechaEntrega)
 
     var mostrarEtapas by remember {
         mutableStateOf(false)
@@ -174,6 +189,21 @@ fun RegistroEntregableScreen(
                 placeholder = {
                     Text("Ej.: Informe de Marco Teórico")
                 },
+                leadingIcon = {
+                    Icon(Icons.Default.Title, contentDescription = null)
+                },
+                trailingIcon = {
+                    IconoEstadoCampo(
+                        hayError = intentoGuardar && errorTitulo != null,
+                        esCorrecto = titulo.isNotBlank() && errorTitulo == null
+                    )
+                },
+                isError = intentoGuardar && errorTitulo != null,
+                supportingText = {
+                    if (intentoGuardar && errorTitulo != null) {
+                        Text(errorTitulo)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -190,6 +220,23 @@ fun RegistroEntregableScreen(
                 },
                 placeholder = {
                     Text("Describe el documento académico")
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Description, contentDescription = null)
+                },
+                trailingIcon = {
+                    IconoEstadoCampo(
+                        hayError = intentoGuardar && errorDescripcion != null,
+                        esCorrecto = descripcion.isNotBlank() && errorDescripcion == null
+                    )
+                },
+                isError = intentoGuardar && errorDescripcion != null,
+                supportingText = {
+                    if (intentoGuardar && errorDescripcion != null) {
+                        Text(errorDescripcion)
+                    } else {
+                        Text("${descripcion.trim().length} caracteres")
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
@@ -209,8 +256,22 @@ fun RegistroEntregableScreen(
                 placeholder = {
                     Text("AAAA-MM-DD")
                 },
+                leadingIcon = {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null)
+                },
+                trailingIcon = {
+                    IconoEstadoCampo(
+                        hayError = intentoGuardar && errorFecha != null,
+                        esCorrecto = fechaEntrega.isNotBlank() && errorFecha == null
+                    )
+                },
+                isError = intentoGuardar && errorFecha != null,
                 supportingText = {
-                    Text("Ejemplo: 2026-12-10")
+                    if (intentoGuardar && errorFecha != null) {
+                        Text(errorFecha)
+                    } else {
+                        Text("Ejemplo: 2026-12-10")
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -248,6 +309,8 @@ fun RegistroEntregableScreen(
             // GUARDAR ENTREGABLE EN ROOM
             Button(
                 onClick = {
+                    intentoGuardar = true
+
                     if (!guardando) {
                         guardando = true
 

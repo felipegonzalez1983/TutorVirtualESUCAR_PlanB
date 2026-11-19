@@ -12,7 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 
@@ -23,6 +22,7 @@ import cl.duoc.tutorvirtual.data.AccesibilidadPreferences
 import cl.duoc.tutorvirtual.navigation.AppNavigation
 import cl.duoc.tutorvirtual.notifications.NotificacionesHelper
 import cl.duoc.tutorvirtual.ui.theme.ProveedorColoresEsucar
+import cl.duoc.tutorvirtual.ui.theme.TutorVirtualESUCARTheme
 import cl.duoc.tutorvirtual.viewmodel.EsucarDatabaseViewModel
 
 // ======================================================
@@ -160,7 +160,7 @@ class MainActivity : FragmentActivity() {
             // INTERFAZ INSTITUCIONAL ESUCAR
             // ======================================
 
-            MaterialTheme {
+            TutorVirtualESUCARTheme {
 
                 ProveedorColoresEsucar(
                     altoContraste = altoContraste

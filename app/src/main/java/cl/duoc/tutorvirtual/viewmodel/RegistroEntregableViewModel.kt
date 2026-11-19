@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class RegistroEntregableViewModel(
     application: Application
@@ -92,17 +90,11 @@ class RegistroEntregableViewModel(
             return "Selecciona una etapa válida."
         }
 
-        if (tituloLimpio.isBlank()) {
-            return "Debes ingresar un título."
-        }
+        ValidacionEntregable.errorTitulo(tituloLimpio)?.let { return it }
 
-        if (descripcionLimpia.isBlank()) {
-            return "Debes ingresar una descripción."
-        }
+        ValidacionEntregable.errorDescripcion(descripcionLimpia)?.let { return it }
 
-        if (!validarFecha(fechaLimpia)) {
-            return "La fecha debe tener formato AAAA-MM-DD."
-        }
+        ValidacionEntregable.errorFecha(fechaLimpia)?.let { return it }
 
         if (estado !in estadosDisponibles) {
             return "Selecciona un estado válido."
@@ -142,33 +134,6 @@ class RegistroEntregableViewModel(
             )
 
             "No se pudo guardar el entregable."
-        }
-    }
-
-    private fun validarFecha(
-        fecha: String
-    ): Boolean {
-
-        if (!Regex(
-                """\d{4}-\d{2}-\d{2}"""
-            ).matches(fecha)
-        ) {
-            return false
-        }
-
-        return try {
-
-            val formato = SimpleDateFormat(
-                "yyyy-MM-dd",
-                Locale.US
-            )
-
-            formato.isLenient = false
-
-            formato.parse(fecha) != null
-
-        } catch (e: Exception) {
-            false
         }
     }
 }

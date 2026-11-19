@@ -35,12 +35,29 @@
         android:name="android.permission.USE_FINGERPRINT" />
 
     <!-- ========================================== -->
+    <!-- UBICACION GPS -->
+    <!-- ========================================== -->
+
+    <!-- Ubicacion precisa y aproximada para registrar -->
+    <!-- el lugar del trabajo de campo -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- El GPS es opcional: la aplicacion funciona sin el -->
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
+    <!-- ========================================== -->
     <!-- APLICACION ESUCAR -->
     <!-- ========================================== -->
 
     <application
         android:allowBackup="true"
-        android:label="Tutor Virtual ESUCAR Plan B"
+        android:label="Tutor Virtual ESUCAR"
         android:supportsRtl="true"
         android:theme="@style/Theme.TutorVirtualESUCAR">
 

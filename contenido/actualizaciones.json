@@ -1,4 +1,3 @@
-
 [
   {
     "id": "NOVEDAD-001",
@@ -20,5 +19,26 @@
     "descripcion": "Revisa los criterios orientativos de las cinco etapas metodológicas. Estos criterios son ejemplos y no representan evaluaciones oficiales de ESUCAR.",
     "fechaPublicacion": "2026-11-09",
     "fuente": "Prototipo académico - contenido de demostración"
+  },
+  {
+    "id": "NOVEDAD-004",
+    "titulo": "Calendario académico 2026 incorporado",
+    "descripcion": "Los hitos de Trabajo de Título muestran las fechas del calendario académico ESUCAR 2026: estados de avance, informes finales, entrega de temas y defensas solemnes. Las fechas pueden ser modificadas por la Escuela.",
+    "fechaPublicacion": "2026-11-18",
+    "fuente": "Calendario de actividades académicas ESUCAR 2026"
+  },
+  {
+    "id": "NOVEDAD-005",
+    "titulo": "Guía metodológica por capítulo",
+    "descripcion": "Las preguntas frecuentes se organizan por capítulo (planteamiento, marco teórico, metodología, análisis y conclusiones) e incluyen una lista de verificación para revisar antes de entregar.",
+    "fechaPublicacion": "2026-11-18",
+    "fuente": "Guía metodológica de Trabajo de Título ESUCAR"
+  },
+  {
+    "id": "NOVEDAD-006",
+    "titulo": "Ponderaciones de evaluación de Trabajo de Título",
+    "descripcion": "Trabajo de Título I (promoción 2026-2027): Anteproyecto I 25%, Anteproyecto II 25%, Defensa del anteproyecto 10% e Informe final 40%. Trabajo de Título I (promoción 2025-2026): primera parcial 30%, segunda parcial 30% y evaluación final 40%. Trabajo de Título II: primer estado de avance 20%, segundo estado de avance 30% e informe final con defensa 50%.",
+    "fechaPublicacion": "2026-11-19",
+    "fuente": "Programas de asignatura Trabajo de Título I y II"
   }
 ]
