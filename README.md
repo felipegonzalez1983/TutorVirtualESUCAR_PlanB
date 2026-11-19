@@ -1,134 +1,73 @@
-
 # Tutor Virtual ESUCAR — Plan B
 
-## Descripción
+**Aplicación móvil Android para el seguimiento académico, metodológico y documental de trabajos de título.**
 
-Tutor Virtual ESUCAR es un prototipo académico de
-aplicación móvil Android destinado a apoyar la
-organización del Trabajo de Título de estudiantes
-de la Escuela de Suboficiales de Carabineros de Chile.
+Proyecto educativo desarrollado para la asignatura **Desarrollo de Aplicaciones Móviles (DSY1105)** de DUOC UC, utilizando Kotlin, Jetpack Compose y arquitectura MVVM.
 
-El proyecto fue desarrollado para la asignatura
-Desarrollo de Aplicaciones Móviles (DSY1105)
-de Duoc UC.
+> **Aviso institucional:** Tutor Virtual ESUCAR es un prototipo académico de demostración. No constituye una aplicación oficial ni autorizada por Carabineros de Chile. Los contenidos de ejemplo no representan necesariamente información institucional vigente.
 
-Esta versión corresponde a un desarrollo individual
-de contingencia (Plan B), paralelo al proyecto
-del equipo académico.
+## 1. Descripción del proyecto
 
-## Responsable
+Tutor Virtual ESUCAR busca apoyar la organización del trabajo de título de estudiantes de la Escuela de Suboficiales de Carabineros de Chile.
 
-Felipe González // Vicente Valenzuela // Yanina Silva
+La aplicación permite consultar etapas metodológicas, gestionar entregables, organizar actividades académicas y registrar evidencias mediante documentos PDF y fotografías.
 
-## Tecnologías utilizadas
+### Origen del Plan B
 
-- Kotlin
-- Android Studio
-- Jetpack Compose
-- Material Design 3
-- DataStore Preferences
-- Corrutinas de Kotlin
-- Git y GitHub
-- HTTP y JSON
+El proyecto comenzó como una versión individual de contingencia, desarrollada paralelamente al proyecto del equipo académico.
 
-## Funcionalidades implementadas
+Esta versión evolucionó con funcionalidades de persistencia local, gestión documental e integración de recursos nativos de Android.
 
-### Etapas metodológicas
+Actualmente se utiliza como base de desarrollo colaborativo para integrar mejoras de diseño y experiencia de usuario.
+
+## 2. Equipo de desarrollo
+
+| Integrante | Área de trabajo |
+|---|---|
+| Felipe González | Desarrollo Android, arquitectura, persistencia e integración |
+| Yanina Silva | Colaboración y modernización visual |
+| Vicente Valenzuela | Colaboración, pruebas y documentación |
+
+Las responsabilidades podrán actualizarse conforme avance el proyecto.
+
+## 3. Tecnologías utilizadas
+
+| Tecnología | Uso |
+|---|---|
+| Kotlin | Lenguaje principal |
+| Android Studio | Entorno de desarrollo |
+| Jetpack Compose | Construcción de interfaces |
+| Material Design 3 | Componentes visuales |
+| MVVM | Separación de responsabilidades |
+| Room / SQLite | Almacenamiento local |
+| DataStore Preferences | Preferencias y persistencia de sesión |
+| Kotlin Coroutines / Flow | Operaciones asíncronas y datos reactivos |
+| MediaStore | Almacenamiento de fotografías |
+| Android Activity Result API | Cámara y selección de documentos |
+| HTTP / JSON | Consulta de novedades académicas |
+| Git / GitHub | Control de versiones y colaboración |
+
+## 4. Funcionalidades implementadas
+
+### 4.1. Etapas metodológicas
+
 - Listado de cinco etapas académicas.
 - Consulta del detalle de cada etapa.
 - Buscador de etapas.
-- Guía interactiva de cinco pasos.
+- Guía metodológica interactiva.
 - Navegación entre pantallas.
+- Actualización manual del estado de cada etapa.
 
-### Preguntas frecuentes
-- Preguntas organizadas por categorías.
-- Búsqueda sin distinguir mayúsculas ni tildes.
-- Respuestas expandibles.
+### 4.2. Gestión de entregables
 
-### Seguimiento académico
-- Estados: Por iniciar, En desarrollo,
-  Enviado y Aprobado.
-- Modificación manual de estados.
-- Persistencia local con DataStore.
-- Estados compartidos entre pantallas.
+- Registro de entregables académicos.
+- Edición de títulos, descripciones y fechas.
+- Cambio de estados: Por iniciar, En desarrollo, Enviado y Aprobado.
+- Eliminación de entregables con confirmación.
+- Persistencia local mediante Room.
+- Asociación de entregables con etapas metodológicas.
 
-### Calendario académico
-- Listado de hitos y actividades.
-- Fechas de entrega editables.
-- Ordenamiento cronológico.
-- Marcado de actividades completadas.
-- Avisos de vencimientos próximos.
+### 4.3. Evidencias PDF
 
-### Notificaciones
-- Notificación de prueba.
-- Recordatorios programados para
-  uno y tres días antes de la entrega.
-- Activación individual de recordatorios.
-- Reprogramación tras reinicio del dispositivo.
-
-### Rúbricas
-- Consulta de criterios por etapa.
-- Contenido disponible sin conexión.
-- Identificación de criterios orientativos.
-
-### Novedades académicas
-- Descarga de novedades desde GitHub.
-- Lectura de contenido JSON.
-- Copia local para acceso sin conexión.
-- Visualización de la última sincronización.
-
-### Accesibilidad
-- Modo normal y alto contraste.
-- Preferencia guardada en DataStore.
-- Colores adaptados en las pantallas
-  principales de la aplicación.
-
-## Estructura del proyecto
-
-- model: modelos de datos.
-- data: repositorios y persistencia.
-- navigation: navegación de pantallas.
-- ui/screens: interfaces de usuario.
-- ui/theme: colores y estilos.
-- notifications: notificaciones y alarmas.
-
-## Requisitos para ejecutar
-
-- Android Studio.
-- SDK de Android 37.
-- Dispositivo o emulador Android
-  compatible con API 24 o superior.
-
-## Instalación
-
-1. Clonar el repositorio.
-2. Abrir el proyecto en Android Studio.
-3. Sincronizar Gradle.
-4. Seleccionar un dispositivo o emulador.
-5. Ejecutar la aplicación.
-
-Para recibir notificaciones en versiones
-compatibles de Android, conceder el permiso
-de notificaciones cuando sea solicitado.
-
-## Pruebas funcionales
-
-Se han realizado pruebas manuales de las
-12 historias de usuario del prototipo,
-incluyendo navegación, persistencia local,
-recordatorios y alto contraste.
-
-La revisión formal de los requisitos técnicos
-de la evaluación se realiza por separado.
-
-## Consideraciones
-
-Este proyecto es un prototipo educativo.
-
-Las etapas, fechas, rúbricas y novedades
-de demostración no representan necesariamente
-información oficial de ESUCAR.
-
-Los estados académicos son registrados
-manualmente por el usuario y no equivalen
-a una aprobación institucional.
+- Selección de documentos mediante el selector nativo de Android.
+- Vinculación
