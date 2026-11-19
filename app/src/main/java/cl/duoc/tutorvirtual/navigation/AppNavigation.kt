@@ -1,6 +1,5 @@
 package cl.duoc.tutorvirtual.navigation
 
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -34,18 +33,20 @@ import cl.duoc.tutorvirtual.ui.screens.ActualizacionesScreen
 import cl.duoc.tutorvirtual.ui.screens.AccesibilidadScreen
 import cl.duoc.tutorvirtual.ui.screens.LoginScreen
 import cl.duoc.tutorvirtual.ui.screens.DiagnosticoBiometriaScreen
+import cl.duoc.tutorvirtual.ui.screens.EvidenciaCamaraScreen
 
 import cl.duoc.tutorvirtual.viewmodel.LoginViewModel
 
 import kotlinx.coroutines.launch
 
 // ======================================================
-// NAVEGACION PRINCIPAL - TUTOR VIRTUAL ESUCAR
+// TUTOR VIRTUAL ESUCAR - NAVEGACION PRINCIPAL
 //
-// LOGIN ESTUDIANTIL
-// DATASTORE - SESION PERSISTENTE
-// ROOM + SQLITE - ENTREGABLES
-// DIAGNOSTICO BIOMETRICO
+// Login estudiantil
+// Sesion persistente con DataStore
+// Entregables con Room + SQLite
+// Diagnostico biometrico
+// Camara para evidencias academicas
 // ======================================================
 
 @Composable
@@ -55,11 +56,10 @@ fun AppNavigation(
 ) {
 
     val colores = LocalColoresEsucar.current
-
     val altoContraste = colores.fondo == Color.Black
 
     // ==============================================
-    // ESTADO DE AUTENTICACION
+    // AUTENTICACION ESTUDIANTIL
     // ==============================================
 
     val estudianteActual by
@@ -75,7 +75,7 @@ fun AppNavigation(
     val scope = rememberCoroutineScope()
 
     // ==============================================
-    // ESTADO DE NAVEGACION
+    // NAVEGACION
     // ==============================================
 
     var pantallaActual by rememberSaveable {
@@ -95,7 +95,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // PANTALLA DE CARGA DE SESION
+    // RECUPERAR SESION DE DATASTORE
     // ==============================================
 
     if (restaurandoSesion) {
@@ -126,19 +126,14 @@ fun AppNavigation(
 
                 Text(
                     text = "Tutor Virtual ESUCAR",
-
                     color = colores.texto,
-
                     fontSize = 22.sp,
-
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Verificando sesión estudiantil...",
-
                     color = colores.textoSecundario,
-
                     fontSize = 14.sp
                 )
             }
@@ -148,7 +143,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // LOGIN DE ESTUDIANTES
+    // MOSTRAR LOGIN SI NO HAY SESION
     // ==============================================
 
     if (estudianteActual == null) {
@@ -173,7 +168,6 @@ fun AppNavigation(
                     if (ingresoCorrecto) {
 
                         pantallaActual = "Inicio"
-
                         loginViewModel.limpiarError()
 
                     } else {
@@ -223,7 +217,7 @@ fun AppNavigation(
     }
 
     // ==============================================
-    // ESTUDIANTE AUTENTICADO
+    // ESTUDIANTE CON SESION ACTIVA
     // ==============================================
 
     val nombreEstudiante =
@@ -233,7 +227,7 @@ fun AppNavigation(
         estudianteActual?.curso ?: ""
 
     // ==============================================
-    // BOTON ATRAS DEL DISPOSITIVO
+    // BOTON ATRAS
     // ==============================================
 
     BackHandler(
@@ -258,6 +252,8 @@ fun AppNavigation(
 
             "DiagnosticoBiometria" -> "Recursos"
 
+            "EvidenciaCamara" -> "Recursos"
+
             "RegistroEntregable" -> "Entregables"
 
             else -> "Inicio"
@@ -276,7 +272,7 @@ fun AppNavigation(
         contentColor = colores.texto,
 
         // ==========================================
-        // BARRA DE SESION
+        // INFORMACION DEL ESTUDIANTE
         // ==========================================
 
         topBar = {
@@ -316,21 +312,15 @@ fun AppNavigation(
 
                             Text(
                                 text = nombreEstudiante,
-
                                 color = colores.texto,
-
                                 fontSize = 13.sp,
-
                                 fontWeight = FontWeight.Bold,
-
                                 maxLines = 1
                             )
 
                             Text(
                                 text = cursoEstudiante,
-
                                 color = colores.textoSecundario,
-
                                 fontSize = 11.sp
                             )
                         }
@@ -339,11 +329,8 @@ fun AppNavigation(
                             onClick = {
 
                                 pantallaActual = "Inicio"
-
                                 etapaSeleccionada = 1
-
                                 origenFaq = "Inicio"
-
                                 origenHitos = "Inicio"
 
                                 loginViewModel.cerrarSesion()
@@ -360,7 +347,6 @@ fun AppNavigation(
                                 },
 
                                 fontSize = 12.sp,
-
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -370,7 +356,7 @@ fun AppNavigation(
         },
 
         // ==========================================
-        // BOTON NUEVO ENTREGABLE
+        // BOTON DE NUEVO ENTREGABLE
         // ==========================================
 
         floatingActionButton = {
@@ -453,7 +439,8 @@ fun AppNavigation(
                             "Hitos",
                             "Actualizaciones",
                             "Accesibilidad",
-                            "DiagnosticoBiometria"
+                            "DiagnosticoBiometria",
+                            "EvidenciaCamara"
                         )
 
                         else -> pantallaActual == opcion
@@ -470,13 +457,9 @@ fun AppNavigation(
 
                             Text(
                                 text = when (opcion) {
-
                                     "Inicio" -> "⌂"
-
                                     "Etapas" -> "◈"
-
                                     "Entregables" -> "☑"
-
                                     else -> "▤"
                                 },
 
@@ -489,42 +472,40 @@ fun AppNavigation(
                             Text(opcion)
                         },
 
-                        colors =
-                            NavigationBarItemDefaults.colors(
+                        colors = NavigationBarItemDefaults.colors(
 
-                                selectedIconColor =
-                                    if (altoContraste) {
-                                        Color.Black
-                                    } else {
-                                        colores.texto
-                                    },
+                            selectedIconColor =
+                                if (altoContraste) {
+                                    Color.Black
+                                } else {
+                                    colores.texto
+                                },
 
-                                selectedTextColor =
-                                    colores.texto,
+                            selectedTextColor = colores.texto,
 
-                                unselectedIconColor =
-                                    if (altoContraste) {
-                                        Color.White
-                                    } else {
-                                        Color.DarkGray
-                                    },
+                            unselectedIconColor =
+                                if (altoContraste) {
+                                    Color.White
+                                } else {
+                                    Color.DarkGray
+                                },
 
-                                unselectedTextColor =
-                                    if (altoContraste) {
-                                        Color.White
-                                    } else {
-                                        Color.DarkGray
-                                    },
+                            unselectedTextColor =
+                                if (altoContraste) {
+                                    Color.White
+                                } else {
+                                    Color.DarkGray
+                                },
 
-                                indicatorColor =
-                                    if (altoContraste) {
-                                        Color.Yellow
-                                    } else {
-                                        colores.acento.copy(
-                                            alpha = 0.25f
-                                        )
-                                    }
-                            )
+                            indicatorColor =
+                                if (altoContraste) {
+                                    Color.Yellow
+                                } else {
+                                    colores.acento.copy(
+                                        alpha = 0.25f
+                                    )
+                                }
+                        )
                     )
                 }
             }
@@ -556,7 +537,6 @@ fun AppNavigation(
                             "Preguntas frecuentes" -> {
 
                                 origenFaq = "Inicio"
-
                                 "Faq"
                             }
 
@@ -565,7 +545,6 @@ fun AppNavigation(
                             "Calendario académico" -> {
 
                                 origenHitos = "Inicio"
-
                                 "Hitos"
                             }
 
@@ -587,7 +566,6 @@ fun AppNavigation(
                     onEtapaClick = { id ->
 
                         etapaSeleccionada = id
-
                         pantallaActual = "DetalleEtapa"
                     },
 
@@ -605,7 +583,6 @@ fun AppNavigation(
 
                 DetalleEtapaScreen(
                     etapaId = etapaSeleccionada,
-
                     modifier = contenidoModifier,
 
                     onVolver = {
@@ -626,7 +603,6 @@ fun AppNavigation(
 
                 GuiaPasoScreen(
                     etapaId = etapaSeleccionada,
-
                     modifier = contenidoModifier,
 
                     onVolver = {
@@ -662,7 +638,7 @@ fun AppNavigation(
             }
 
             // ======================================
-            // REGISTRO DE ENTREGABLES
+            // REGISTRAR ENTREGABLE
             // ======================================
 
             "RegistroEntregable" -> {
@@ -711,7 +687,7 @@ fun AppNavigation(
             }
 
             // ======================================
-            // NOVEDADES ACADEMICAS
+            // NOVEDADES
             // ======================================
 
             "Actualizaciones" -> {
@@ -756,7 +732,22 @@ fun AppNavigation(
             }
 
             // ======================================
-            // MENU DE RECURSOS
+            // CAMARA ACADEMICA
+            // ======================================
+
+            "EvidenciaCamara" -> {
+
+                EvidenciaCamaraScreen(
+                    modifier = contenidoModifier,
+
+                    onVolver = {
+                        pantallaActual = "Recursos"
+                    }
+                )
+            }
+
+            // ======================================
+            // RECURSOS
             // ======================================
 
             "Recursos" -> {
@@ -771,14 +762,12 @@ fun AppNavigation(
                     onFaq = {
 
                         origenFaq = "Recursos"
-
                         pantallaActual = "Faq"
                     },
 
                     onHitos = {
 
                         origenHitos = "Recursos"
-
                         pantallaActual = "Hitos"
                     },
 
@@ -792,6 +781,10 @@ fun AppNavigation(
 
                     onBiometria = {
                         pantallaActual = "DiagnosticoBiometria"
+                    },
+
+                    onCamara = {
+                        pantallaActual = "EvidenciaCamara"
                     }
                 )
             }
@@ -814,13 +807,11 @@ fun AppNavigation(
 
                         horizontalAlignment = Alignment.CenterHorizontally,
 
-                        verticalArrangement =
-                            Arrangement.spacedBy(14.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
 
                         Text(
                             text = pantallaActual,
-
                             color = colores.texto,
 
                             style = MaterialTheme
@@ -829,7 +820,6 @@ fun AppNavigation(
 
                         Text(
                             text = "Esta sección está en desarrollo.",
-
                             color = colores.textoSecundario
                         )
 
@@ -866,28 +856,22 @@ fun AppNavigation(
 }
 
 // ======================================================
-// PANTALLA DE RECURSOS ACADEMICOS
+// RECURSOS ACADEMICOS
 // ======================================================
 
 @Composable
 private fun RecursosScreen(
     modifier: Modifier = Modifier,
-
     onRubricas: () -> Unit,
-
     onFaq: () -> Unit,
-
     onHitos: () -> Unit,
-
     onActualizaciones: () -> Unit,
-
     onAccesibilidad: () -> Unit,
-
-    onBiometria: () -> Unit
+    onBiometria: () -> Unit,
+    onCamara: () -> Unit
 ) {
 
     val colores = LocalColoresEsucar.current
-
     val altoContraste = colores.fondo == Color.Black
 
     Column(
@@ -925,23 +909,16 @@ private fun RecursosScreen(
 
                 Text(
                     text = "ESUCAR · APOYO ACADÉMICO",
-
                     color = colores.acento,
-
                     fontSize = 12.sp,
-
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Recursos académicos",
-
                     color = colores.textoEncabezado,
-
                     fontSize = 27.sp,
-
                     lineHeight = 33.sp,
-
                     fontWeight = FontWeight.Bold
                 )
 
@@ -956,23 +933,15 @@ private fun RecursosScreen(
                     },
 
                     fontSize = 14.sp,
-
                     lineHeight = 21.sp
                 )
             }
         }
 
-        // ======================================
-        // TITULO
-        // ======================================
-
         Text(
             text = "Herramientas disponibles",
-
             color = colores.texto,
-
             fontSize = 20.sp,
-
             fontWeight = FontWeight.Bold
         )
 
@@ -987,9 +956,7 @@ private fun RecursosScreen(
                     "desde internet y disponible sin conexión.",
 
             textoBoton = "Ver novedades",
-
             onClick = onActualizaciones,
-
             destacado = true
         )
 
@@ -1004,7 +971,6 @@ private fun RecursosScreen(
                     "de las cinco etapas académicas.",
 
             textoBoton = "Ver rúbricas",
-
             onClick = onRubricas
         )
 
@@ -1019,7 +985,6 @@ private fun RecursosScreen(
                     "metodología y formato.",
 
             textoBoton = "Ver preguntas frecuentes",
-
             onClick = onFaq
         )
 
@@ -1034,7 +999,6 @@ private fun RecursosScreen(
                     "recordatorios de entrega.",
 
             textoBoton = "Ver calendario",
-
             onClick = onHitos
         )
 
@@ -1049,28 +1013,41 @@ private fun RecursosScreen(
                     "para facilitar la lectura.",
 
             textoBoton = "Configurar accesibilidad",
-
             onClick = onAccesibilidad
         )
 
         // ======================================
-        // NUEVO: DIAGNOSTICO BIOMETRICO
+        // BIOMETRIA
         // ======================================
 
         TarjetaRecurso(
             titulo = "Seguridad biométrica",
 
-            descripcion = "Comprueba si tu dispositivo " +
-                    "admite autenticación mediante " +
-                    "huella o rostro compatible.",
+            descripcion = "Comprueba la disponibilidad " +
+                    "de huella o rostro y prueba " +
+                    "la autenticación de Android.",
 
             textoBoton = "Comprobar biometría",
-
             onClick = onBiometria
         )
 
         // ======================================
-        // ADVERTENCIA INSTITUCIONAL
+        // NUEVO: CAMARA ACADEMICA
+        // ======================================
+
+        TarjetaRecurso(
+            titulo = "Cámara académica",
+
+            descripcion = "Abre la cámara del dispositivo " +
+                    "para capturar y visualizar " +
+                    "evidencias fotográficas de prueba.",
+
+            textoBoton = "Abrir cámara académica",
+            onClick = onCamara
+        )
+
+        // ======================================
+        // AVISO INSTITUCIONAL
         // ======================================
 
         Text(
@@ -1079,33 +1056,26 @@ private fun RecursosScreen(
                     "no constituyen información oficial de ESUCAR.",
 
             color = colores.textoSecundario,
-
             fontSize = 12.sp,
-
             lineHeight = 18.sp
         )
     }
 }
 
 // ======================================================
-// TARJETA REUTILIZABLE DE RECURSOS
+// TARJETA DE RECURSOS
 // ======================================================
 
 @Composable
 private fun TarjetaRecurso(
     titulo: String,
-
     descripcion: String,
-
     textoBoton: String,
-
     onClick: () -> Unit,
-
     destacado: Boolean = false
 ) {
 
     val colores = LocalColoresEsucar.current
-
     val altoContraste = colores.fondo == Color.Black
 
     Card(
@@ -1116,10 +1086,7 @@ private fun TarjetaRecurso(
         ),
 
         border = if (altoContraste) {
-            BorderStroke(
-                1.dp,
-                colores.borde
-            )
+            BorderStroke(1.dp, colores.borde)
         } else {
             null
         },
@@ -1145,21 +1112,15 @@ private fun TarjetaRecurso(
 
             Text(
                 text = titulo,
-
                 color = colores.texto,
-
                 fontSize = 18.sp,
-
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = descripcion,
-
                 color = colores.textoSecundario,
-
                 fontSize = 14.sp,
-
                 lineHeight = 20.sp
             )
 
@@ -1167,7 +1128,6 @@ private fun TarjetaRecurso(
 
                 Button(
                     onClick = onClick,
-
                     modifier = Modifier.fillMaxWidth(),
 
                     colors = ButtonDefaults.buttonColors(
@@ -1193,7 +1153,6 @@ private fun TarjetaRecurso(
 
                 OutlinedButton(
                     onClick = onClick,
-
                     modifier = Modifier.fillMaxWidth(),
 
                     border = BorderStroke(
@@ -1210,10 +1169,9 @@ private fun TarjetaRecurso(
                         }
                     ),
 
-                    colors =
-                        ButtonDefaults.outlinedButtonColors(
-                            contentColor = colores.texto
-                        )
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = colores.texto
+                    )
                 ) {
 
                     Text(textoBoton)

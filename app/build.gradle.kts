@@ -30,6 +30,7 @@ android {
         release {
             optimization {
                 enable = true
+
                 packageScope = setOf(
                     "android.**",
                     "kotlin.**",
@@ -69,6 +70,16 @@ dependencies {
     implementation(libs.androidx.core.ktx)
 
     // ==========================================
+    // ANDROIDX FRAGMENT
+    // COMPATIBILIDAD CON ACTIVITY RESULT API
+    // Y FRAGMENTACTIVITY PARA BIOMETRIA
+    // ==========================================
+
+    implementation(
+        "androidx.fragment:fragment:1.9.1"
+    )
+
+    // ==========================================
     // ARQUITECTURA MVVM
     // ==========================================
 
@@ -101,8 +112,7 @@ dependencies {
     )
 
     // ==========================================
-    // AUTENTICACION BIOMETRICA
-    // HUELLA DIGITAL / ROSTRO COMPATIBLE
+    // BIOMETRIA
     // ==========================================
 
     implementation(
