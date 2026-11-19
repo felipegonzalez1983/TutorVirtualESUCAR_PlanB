@@ -1,4 +1,3 @@
-
 package cl.duoc.tutorvirtual.viewmodel
 
 import android.app.Application
@@ -12,27 +11,27 @@ import cl.duoc.tutorvirtual.data.EsucarRoomRepository
 import cl.duoc.tutorvirtual.data.local.EvidenciaEntity
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // ======================================================
-// VIEWMODEL DE EVIDENCIAS ACADEMICAS
 // TUTOR VIRTUAL ESUCAR - PLAN B
+// EVIDENCIAS VIEWMODEL
 //
-// MVVM + ROOM + SQLITE
-//
-// Funcionalidades:
-// 1. Consultar evidencias por entregable.
-// 2. Registrar documentos PDF.
-// 3. Evitar PDF duplicados por URI.
-// 4. Registrar fotografias ya guardadas.
-// 5. Eliminar registros de evidencias.
-//
-// No modifica las tablas existentes.
+// FUNCIONALIDADES:
+// - Consultar evidencias de un entregable
+// - Registrar documentos PDF
+// - Evitar PDF duplicados
+// - Registrar fotografias permanentes
+// - Eliminar referencias PDF de Room
+// - Eliminar fotografias fisicas y su registro
+// - Gestionar mensajes y estado de procesamiento
 // ======================================================
 
 class EvidenciasViewModel(
@@ -40,17 +39,19 @@ class EvidenciasViewModel(
 ) : AndroidViewModel(application) {
 
     // ==============================================
-    // REPOSITORIO
+    // REPOSITORIO Y ALMACENAMIENTO
     // ==============================================
 
     private val repository =
-        EsucarRoomRepository(application)
+        EsucarRoomRepository(
+            application.applicationContext
+        )
 
     private val resolver =
         application.contentResolver
 
     // ==============================================
-    // ESTADOS DE LA INTERFAZ
+    // ESTADOS
     // ==============================================
 
     private val _procesando =
@@ -79,7 +80,7 @@ class EvidenciasViewModel(
     }
 
     // ==============================================
-    // REGISTRAR DOCUMENTO PDF
+    // REGISTRAR PDF
     // ==============================================
 
     fun registrarPdf(
@@ -89,15 +90,12 @@ class EvidenciasViewModel(
         onResultado: (Boolean) -> Unit = {}
     ) {
 
-        // Evitar otra operacion mientras
-        // existe un registro en proceso.
         if (_procesando.value) {
 
             _mensaje.value =
                 "Ya existe una operación en curso."
 
             onResultado(false)
-
             return
         }
 
@@ -116,29 +114,21 @@ class EvidenciasViewModel(
                     "El documento debe tener un nombre."
                 }
 
-                // ==================================
-                // BUSCAR EVIDENCIAS EXISTENTES
-                // ==================================
+                val uriNueva = uri.toString()
 
+                // Consultar evidencias existentes.
                 val evidenciasExistentes =
                     repository.observarEvidencias(
                         entregableId
                     ).first()
 
-                // La URI identifica el documento
-                // seleccionado desde Android.
-                val uriNueva = uri.toString()
-
+                // Evitar guardar nuevamente el mismo PDF.
                 val documentoDuplicado =
                     evidenciasExistentes.any { evidencia ->
 
                         evidencia.tipo == "PDF" &&
                                 evidencia.uriArchivo == uriNueva
                     }
-
-                // ==================================
-                // EVITAR DUPLICADOS
-                // ==================================
 
                 if (documentoDuplicado) {
 
@@ -147,23 +137,16 @@ class EvidenciasViewModel(
                                 "al entregable seleccionado."
 
                     onResultado(false)
-
                     return@launch
                 }
 
-                // ==================================
-                // CONSERVAR ACCESO AL PDF
-                // ==================================
-
+                // Mantener permiso de lectura del PDF.
                 resolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
 
-                // ==================================
-                // CREAR REGISTRO ROOM
-                // ==================================
-
+                // Registrar referencia en Room.
                 val evidencia = EvidenciaEntity(
                     entregableId = entregableId,
                     nombreArchivo = nombreArchivo.trim(),
@@ -216,7 +199,6 @@ class EvidenciasViewModel(
                 "Ya existe una operación en curso."
 
             onResultado(false)
-
             return
         }
 
@@ -275,7 +257,19 @@ class EvidenciasViewModel(
     }
 
     // ==============================================
-    // ELIMINAR REGISTRO DE EVIDENCIA
+    // ELIMINAR EVIDENCIA
+    //
+    // PDF:
+    // - Eliminar solamente el registro de Room.
+    // - Conservar el archivo original.
+    //
+    // FOTO:
+    // - Eliminar el archivo de MediaStore.
+    // - Eliminar su registro de Room.
+    //
+    // Si Android no autoriza eliminar la foto,
+    // se conserva el registro para evitar que
+    // desaparezca de la app sin haberse borrado.
     // ==============================================
 
     fun eliminarEvidencia(
@@ -289,7 +283,6 @@ class EvidenciasViewModel(
                 "Ya existe una operación en curso."
 
             onResultado(false)
-
             return
         }
 
@@ -300,12 +293,99 @@ class EvidenciasViewModel(
 
             try {
 
-                repository.eliminarEvidencia(
-                    evidencia
-                )
+                require(evidencia.id > 0) {
+                    "La evidencia no tiene un ID válido."
+                }
 
-                _mensaje.value =
-                    "Registro de evidencia eliminado."
+                when (evidencia.tipo) {
+
+                    // ==================================
+                    // ELIMINACION DE FOTOGRAFIA
+                    // ==================================
+
+                    "FOTO" -> {
+
+                        val uri = Uri.parse(
+                            evidencia.uriArchivo
+                        )
+
+                        // Solo admitir referencias a
+                        // contenido multimedia de Android.
+                        require(
+                            uri.scheme == "content" &&
+                                    uri.authority == "media"
+                        ) {
+                            "La fotografía no tiene una " +
+                                    "referencia MediaStore válida."
+                        }
+
+                        // Eliminar la fotografia fisica.
+                        // Se hace en un hilo de I/O.
+                        val filasEliminadas =
+                            withContext(Dispatchers.IO) {
+
+                                resolver.delete(
+                                    uri,
+                                    null,
+                                    null
+                                )
+                            }
+
+                        // Una fila indica archivo borrado.
+                        // Cero puede significar que la imagen
+                        // ya no existe en MediaStore.
+                        if (filasEliminadas < 0) {
+
+                            error(
+                                "No fue posible eliminar la fotografía."
+                            )
+                        }
+
+                        // Eliminar el registro de Room.
+                        repository.eliminarEvidencia(
+                            evidencia
+                        )
+
+                        _mensaje.value =
+                            if (filasEliminadas > 0) {
+
+                                "Fotografía y registro " +
+                                        "eliminados correctamente."
+
+                            } else {
+
+                                "Registro eliminado. " +
+                                        "La fotografía ya no " +
+                                        "estaba disponible."
+                            }
+                    }
+
+                    // ==================================
+                    // ELIMINACION DE PDF
+                    // ==================================
+
+                    "PDF" -> {
+
+                        repository.eliminarEvidencia(
+                            evidencia
+                        )
+
+                        _mensaje.value =
+                            "PDF desvinculado correctamente. " +
+                                    "El archivo original se conserva."
+                    }
+
+                    // ==================================
+                    // TIPO DESCONOCIDO
+                    // ==================================
+
+                    else -> {
+
+                        error(
+                            "Tipo de evidencia no reconocido."
+                        )
+                    }
+                }
 
                 onResultado(true)
 
@@ -313,10 +393,18 @@ class EvidenciasViewModel(
 
                 throw e
 
+            } catch (e: SecurityException) {
+
+                _mensaje.value =
+                    "Android no autorizó eliminar " +
+                            "la fotografía. El registro se conserva."
+
+                onResultado(false)
+
             } catch (e: Exception) {
 
                 _mensaje.value =
-                    "No se pudo eliminar la evidencia: " +
+                    "No se pudo completar la eliminación: " +
                             (e.message ?: "Error desconocido.")
 
                 onResultado(false)
