@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,36 +25,51 @@ import cl.duoc.tutorvirtual.notifications.NotificacionesHelper
 import cl.duoc.tutorvirtual.ui.theme.ProveedorColoresEsucar
 import cl.duoc.tutorvirtual.viewmodel.EsucarDatabaseViewModel
 
-class MainActivity : ComponentActivity() {
+// ======================================================
+// ACTIVIDAD PRINCIPAL - TUTOR VIRTUAL ESUCAR
+//
+// FragmentActivity permite utilizar BiometricPrompt
+// para autenticacion con huella o rostro compatible.
+//
+// Conservamos Compose, Room, DataStore,
+// accesibilidad y notificaciones.
+// ======================================================
+
+class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Crear el canal de notificaciones academicas
+        // ==========================================
+        // CANAL DE NOTIFICACIONES ACADEMICAS
+        // ==========================================
+
         NotificacionesHelper.crearCanal(
             applicationContext
         )
+
+        // ==========================================
+        // INTERFAZ JETPACK COMPOSE
+        // ==========================================
 
         setContent {
 
             val context = LocalContext.current
 
-            // ==========================================
+            // ======================================
             // INICIALIZACION DE ROOM + SQLITE
-            // ==========================================
+            // ======================================
 
-            // Obtener el ViewModel de la base de datos
             val databaseViewModel: EsucarDatabaseViewModel =
                 viewModel()
 
-            // Observar el resultado de inicializacion
             val baseDatosLista by
             databaseViewModel.baseDatosLista.collectAsState()
 
             val mensajeError by
             databaseViewModel.mensajeError.collectAsState()
 
-            // Registrar el resultado en Logcat
+            // Registrar resultados en Logcat
             LaunchedEffect(
                 baseDatosLista,
                 mensajeError
@@ -60,17 +77,16 @@ class MainActivity : ComponentActivity() {
 
                 if (baseDatosLista) {
 
-                    android.util.Log.i(
+                    Log.i(
                         "ESUCAR_DATABASE",
                         "Base de datos inicializada. " +
                                 "Las etapas estan registradas en SQLite."
                     )
-
                 }
 
                 if (mensajeError != null) {
 
-                    android.util.Log.e(
+                    Log.e(
                         "ESUCAR_DATABASE",
                         "Error al inicializar SQLite: " +
                                 mensajeError
@@ -78,30 +94,34 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // ==========================================
+            // ======================================
             // ACCESIBILIDAD
-            // ==========================================
+            // ======================================
 
-            val accesibilidadPreferences = remember(context) {
-                AccesibilidadPreferences(
-                    context.applicationContext
-                )
-            }
+            val accesibilidadPreferences =
+                remember(context) {
 
-            // Recuperar el modo de alto contraste guardado
-            val flujoAltoContraste = remember(
-                accesibilidadPreferences
-            ) {
-                accesibilidadPreferences.obtenerAltoContraste()
-            }
+                    AccesibilidadPreferences(
+                        context.applicationContext
+                    )
+                }
 
-            val altoContraste by flujoAltoContraste.collectAsState(
+            // Recuperar el modo de alto contraste
+            val flujoAltoContraste =
+                remember(accesibilidadPreferences) {
+
+                    accesibilidadPreferences
+                        .obtenerAltoContraste()
+                }
+
+            val altoContraste by
+            flujoAltoContraste.collectAsState(
                 initial = false
             )
 
-            // ==========================================
+            // ======================================
             // PERMISOS DE NOTIFICACIONES
-            // ==========================================
+            // ======================================
 
             val permisoNotificaciones =
                 rememberLauncherForActivityResult(
@@ -109,11 +129,11 @@ class MainActivity : ComponentActivity() {
                         ActivityResultContracts.RequestPermission()
                 ) { autorizado ->
 
-                    // El resultado queda disponible para
-                    // futuras mejoras de los recordatorios.
+                    // Resultado disponible para futuras
+                    // mejoras de las notificaciones.
                 }
 
-            // Verificar permiso en Android 13 o superior
+            // Android 13 o superior
             LaunchedEffect(Unit) {
 
                 if (
@@ -136,9 +156,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // ==========================================
+            // ======================================
             // INTERFAZ INSTITUCIONAL ESUCAR
-            // ==========================================
+            // ======================================
 
             MaterialTheme {
 
@@ -146,7 +166,8 @@ class MainActivity : ComponentActivity() {
                     altoContraste = altoContraste
                 ) {
 
-                    // Mantener la navegacion existente
+                    // Conservamos la navegacion,
+                    // login, CRUD y todas las pantallas.
                     AppNavigation()
                 }
             }

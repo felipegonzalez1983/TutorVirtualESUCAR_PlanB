@@ -1,17 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Conexión a internet para actualizar contenido -->
+    <!-- ========================================== -->
+    <!-- INTERNET -->
+    <!-- ========================================== -->
+
+    <!-- Conexion para actualizar contenido -->
     <uses-permission
         android:name="android.permission.INTERNET" />
+
+    <!-- ========================================== -->
+    <!-- NOTIFICACIONES Y RECORDATORIOS -->
+    <!-- ========================================== -->
 
     <!-- Notificaciones en Android 13 o superior -->
     <uses-permission
         android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Recuperar recordatorios al reiniciar el celular -->
+    <!-- Recuperar recordatorios al reiniciar -->
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- ========================================== -->
+    <!-- AUTENTICACION BIOMETRICA -->
+    <!-- ========================================== -->
+
+    <!-- Autenticacion con biometria compatible -->
+    <uses-permission
+        android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- Compatibilidad con lectores de huella -->
+    <!-- en versiones anteriores de Android -->
+    <uses-permission
+        android:name="android.permission.USE_FINGERPRINT" />
+
+    <!-- ========================================== -->
+    <!-- APLICACION ESUCAR -->
+    <!-- ========================================== -->
 
     <application
         android:allowBackup="true"
@@ -19,32 +44,45 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TutorVirtualESUCAR">
 
-        <!-- Pantalla principal -->
+        <!-- ====================================== -->
+        <!-- ACTIVIDAD PRINCIPAL -->
+        <!-- ====================================== -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action
+                    android:name="android.intent.action.MAIN" />
+
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
         </activity>
 
-        <!-- Receptor de recordatorios académicos -->
+        <!-- ====================================== -->
+        <!-- RECORDATORIOS ACADEMICOS -->
+        <!-- ====================================== -->
+
         <receiver
             android:name=".notifications.RecordatorioReceiver"
             android:enabled="true"
             android:exported="false" />
 
-        <!-- Recuperación de alarmas tras reinicio -->
+        <!-- ====================================== -->
+        <!-- RECUPERAR ALARMAS TRAS REINICIO -->
+        <!-- ====================================== -->
+
         <receiver
             android:name=".notifications.ReinicioReceiver"
             android:enabled="true"
             android:exported="false">
 
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action
+                    android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
 
         </receiver>

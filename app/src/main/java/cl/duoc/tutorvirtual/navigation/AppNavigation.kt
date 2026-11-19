@@ -1,5 +1,6 @@
 package cl.duoc.tutorvirtual.navigation
 
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -16,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 import cl.duoc.tutorvirtual.ui.theme.LocalColoresEsucar
+
 import cl.duoc.tutorvirtual.ui.screens.HomeScreen
 import cl.duoc.tutorvirtual.ui.screens.EtapasScreen
 import cl.duoc.tutorvirtual.ui.screens.DetalleEtapaScreen
@@ -29,29 +32,60 @@ import cl.duoc.tutorvirtual.ui.screens.HitosScreen
 import cl.duoc.tutorvirtual.ui.screens.RubricasScreen
 import cl.duoc.tutorvirtual.ui.screens.ActualizacionesScreen
 import cl.duoc.tutorvirtual.ui.screens.AccesibilidadScreen
+import cl.duoc.tutorvirtual.ui.screens.LoginScreen
+import cl.duoc.tutorvirtual.ui.screens.DiagnosticoBiometriaScreen
+
+import cl.duoc.tutorvirtual.viewmodel.LoginViewModel
+
+import kotlinx.coroutines.launch
 
 // ======================================================
-// NAVEGACION PRINCIPAL TUTOR VIRTUAL ESUCAR
+// NAVEGACION PRINCIPAL - TUTOR VIRTUAL ESUCAR
+//
+// LOGIN ESTUDIANTIL
+// DATASTORE - SESION PERSISTENTE
+// ROOM + SQLITE - ENTREGABLES
+// DIAGNOSTICO BIOMETRICO
 // ======================================================
 
 @Composable
 fun AppNavigation(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    loginViewModel: LoginViewModel = viewModel()
 ) {
+
     val colores = LocalColoresEsucar.current
+
     val altoContraste = colores.fondo == Color.Black
 
-    // PANTALLA ACTUAL
+    // ==============================================
+    // ESTADO DE AUTENTICACION
+    // ==============================================
+
+    val estudianteActual by
+    loginViewModel.estudianteActual.collectAsState()
+
+    val restaurandoSesion by
+    loginViewModel.restaurandoSesion.collectAsState()
+
+    val mensajeLoginHost = remember {
+        SnackbarHostState()
+    }
+
+    val scope = rememberCoroutineScope()
+
+    // ==============================================
+    // ESTADO DE NAVEGACION
+    // ==============================================
+
     var pantallaActual by rememberSaveable {
         mutableStateOf("Inicio")
     }
 
-    // ETAPA SELECCIONADA
     var etapaSeleccionada by rememberSaveable {
         mutableIntStateOf(1)
     }
 
-    // RECORDAR ORIGEN DE LAS PANTALLAS
     var origenFaq by rememberSaveable {
         mutableStateOf("Inicio")
     }
@@ -60,10 +94,152 @@ fun AppNavigation(
         mutableStateOf("Inicio")
     }
 
+    // ==============================================
+    // PANTALLA DE CARGA DE SESION
+    // ==============================================
+
+    if (restaurandoSesion) {
+
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(colores.fondo),
+
+            contentAlignment = Alignment.Center
+        ) {
+
+            Column(
+                modifier = Modifier.padding(24.dp),
+
+                horizontalAlignment = Alignment.CenterHorizontally,
+
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+
+                CircularProgressIndicator(
+                    color = if (altoContraste) {
+                        Color.Yellow
+                    } else {
+                        colores.acento
+                    }
+                )
+
+                Text(
+                    text = "Tutor Virtual ESUCAR",
+
+                    color = colores.texto,
+
+                    fontSize = 22.sp,
+
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "Verificando sesión estudiantil...",
+
+                    color = colores.textoSecundario,
+
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        return
+    }
+
+    // ==============================================
+    // LOGIN DE ESTUDIANTES
+    // ==============================================
+
+    if (estudianteActual == null) {
+
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(colores.fondo)
+        ) {
+
+            LoginScreen(
+                modifier = Modifier.fillMaxSize(),
+
+                onIniciarSesion = { identificador, contrasena ->
+
+                    val ingresoCorrecto =
+                        loginViewModel.iniciarSesion(
+                            identificador = identificador,
+                            contrasena = contrasena
+                        )
+
+                    if (ingresoCorrecto) {
+
+                        pantallaActual = "Inicio"
+
+                        loginViewModel.limpiarError()
+
+                    } else {
+
+                        val mensaje =
+                            loginViewModel.mensajeError.value
+                                ?: "No se pudo iniciar sesión."
+
+                        scope.launch {
+
+                            mensajeLoginHost.showSnackbar(
+                                message = mensaje,
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+                }
+            )
+
+            SnackbarHost(
+                hostState = mensajeLoginHost,
+
+                modifier = Modifier.align(
+                    Alignment.BottomCenter
+                )
+            ) { data ->
+
+                Snackbar(
+                    snackbarData = data,
+
+                    containerColor = if (altoContraste) {
+                        Color.Yellow
+                    } else {
+                        colores.encabezado
+                    },
+
+                    contentColor = if (altoContraste) {
+                        Color.Black
+                    } else {
+                        Color.White
+                    }
+                )
+            }
+        }
+
+        return
+    }
+
+    // ==============================================
+    // ESTUDIANTE AUTENTICADO
+    // ==============================================
+
+    val nombreEstudiante =
+        estudianteActual?.nombre ?: "Estudiante"
+
+    val cursoEstudiante =
+        estudianteActual?.curso ?: ""
+
+    // ==============================================
     // BOTON ATRAS DEL DISPOSITIVO
+    // ==============================================
+
     BackHandler(
         enabled = pantallaActual != "Inicio"
     ) {
+
         pantallaActual = when (pantallaActual) {
 
             "GuiaPaso" -> "DetalleEtapa"
@@ -80,18 +256,123 @@ fun AppNavigation(
 
             "Accesibilidad" -> "Recursos"
 
+            "DiagnosticoBiometria" -> "Recursos"
+
             "RegistroEntregable" -> "Entregables"
 
             else -> "Inicio"
         }
     }
 
+    // ==============================================
+    // ESTRUCTURA PRINCIPAL
+    // ==============================================
+
     Scaffold(
         modifier = modifier,
+
         containerColor = colores.fondo,
+
         contentColor = colores.texto,
 
+        // ==========================================
+        // BARRA DE SESION
+        // ==========================================
+
+        topBar = {
+
+            if (pantallaActual == "Inicio") {
+
+                Surface(
+                    color = colores.tarjeta,
+
+                    border = if (altoContraste) {
+                        BorderStroke(
+                            1.dp,
+                            colores.borde
+                        )
+                    } else {
+                        null
+                    }
+                ) {
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = 12.dp,
+                                vertical = 6.dp
+                            ),
+
+                        verticalAlignment = Alignment.CenterVertically,
+
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+
+                            Text(
+                                text = nombreEstudiante,
+
+                                color = colores.texto,
+
+                                fontSize = 13.sp,
+
+                                fontWeight = FontWeight.Bold,
+
+                                maxLines = 1
+                            )
+
+                            Text(
+                                text = cursoEstudiante,
+
+                                color = colores.textoSecundario,
+
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        TextButton(
+                            onClick = {
+
+                                pantallaActual = "Inicio"
+
+                                etapaSeleccionada = 1
+
+                                origenFaq = "Inicio"
+
+                                origenHitos = "Inicio"
+
+                                loginViewModel.cerrarSesion()
+                            }
+                        ) {
+
+                            Text(
+                                text = "Cerrar sesión",
+
+                                color = if (altoContraste) {
+                                    Color.Yellow
+                                } else {
+                                    colores.texto
+                                },
+
+                                fontSize = 12.sp,
+
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        },
+
+        // ==========================================
         // BOTON NUEVO ENTREGABLE
+        // ==========================================
+
         floatingActionButton = {
 
             if (pantallaActual == "Entregables") {
@@ -100,30 +381,39 @@ fun AppNavigation(
                     onClick = {
                         pantallaActual = "RegistroEntregable"
                     },
+
                     containerColor = if (altoContraste) {
                         Color.Yellow
                     } else {
                         colores.encabezado
                     },
+
                     contentColor = if (altoContraste) {
                         Color.Black
                     } else {
                         Color.White
                     },
+
                     shape = RoundedCornerShape(16.dp)
                 ) {
+
                     Text(
                         text = "+ Nuevo entregable",
+
                         modifier = Modifier.padding(
                             horizontal = 16.dp
                         ),
+
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
         },
 
-        // BARRA INFERIOR DE NAVEGACION
+        // ==========================================
+        // BARRA INFERIOR
+        // ==========================================
+
         bottomBar = {
 
             NavigationBar(
@@ -162,7 +452,8 @@ fun AppNavigation(
                             "Faq",
                             "Hitos",
                             "Actualizaciones",
-                            "Accesibilidad"
+                            "Accesibilidad",
+                            "DiagnosticoBiometria"
                         )
 
                         else -> pantallaActual == opcion
@@ -176,13 +467,19 @@ fun AppNavigation(
                         },
 
                         icon = {
+
                             Text(
                                 text = when (opcion) {
+
                                     "Inicio" -> "⌂"
+
                                     "Etapas" -> "◈"
+
                                     "Entregables" -> "☑"
+
                                     else -> "▤"
                                 },
+
                                 style = MaterialTheme
                                     .typography.titleLarge
                             )
@@ -192,35 +489,42 @@ fun AppNavigation(
                             Text(opcion)
                         },
 
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = if (altoContraste) {
-                                Color.Black
-                            } else {
-                                colores.texto
-                            },
+                        colors =
+                            NavigationBarItemDefaults.colors(
 
-                            selectedTextColor = colores.texto,
+                                selectedIconColor =
+                                    if (altoContraste) {
+                                        Color.Black
+                                    } else {
+                                        colores.texto
+                                    },
 
-                            unselectedIconColor = if (altoContraste) {
-                                Color.White
-                            } else {
-                                Color.DarkGray
-                            },
+                                selectedTextColor =
+                                    colores.texto,
 
-                            unselectedTextColor = if (altoContraste) {
-                                Color.White
-                            } else {
-                                Color.DarkGray
-                            },
+                                unselectedIconColor =
+                                    if (altoContraste) {
+                                        Color.White
+                                    } else {
+                                        Color.DarkGray
+                                    },
 
-                            indicatorColor = if (altoContraste) {
-                                Color.Yellow
-                            } else {
-                                colores.acento.copy(
-                                    alpha = 0.25f
-                                )
-                            }
-                        )
+                                unselectedTextColor =
+                                    if (altoContraste) {
+                                        Color.White
+                                    } else {
+                                        Color.DarkGray
+                                    },
+
+                                indicatorColor =
+                                    if (altoContraste) {
+                                        Color.Yellow
+                                    } else {
+                                        colores.acento.copy(
+                                            alpha = 0.25f
+                                        )
+                                    }
+                            )
                     )
                 }
             }
@@ -234,9 +538,10 @@ fun AppNavigation(
 
         when (pantallaActual) {
 
-            // =========================================
+            // ======================================
             // INICIO
-            // =========================================
+            // ======================================
+
             "Inicio" -> {
 
                 HomeScreen(
@@ -249,14 +554,18 @@ fun AppNavigation(
                             "Guía metodológica" -> "Etapas"
 
                             "Preguntas frecuentes" -> {
+
                                 origenFaq = "Inicio"
+
                                 "Faq"
                             }
 
                             "Mis entregables" -> "Entregables"
 
                             "Calendario académico" -> {
+
                                 origenHitos = "Inicio"
+
                                 "Hitos"
                             }
 
@@ -266,16 +575,19 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // ETAPAS METODOLOGICAS
-            // =========================================
+            // ======================================
+
             "Etapas" -> {
 
                 EtapasScreen(
                     modifier = contenidoModifier,
 
                     onEtapaClick = { id ->
+
                         etapaSeleccionada = id
+
                         pantallaActual = "DetalleEtapa"
                     },
 
@@ -285,13 +597,15 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // DETALLE DE ETAPA
-            // =========================================
+            // ======================================
+
             "DetalleEtapa" -> {
 
                 DetalleEtapaScreen(
                     etapaId = etapaSeleccionada,
+
                     modifier = contenidoModifier,
 
                     onVolver = {
@@ -304,13 +618,15 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // GUIA PASO A PASO
-            // =========================================
+            // ======================================
+
             "GuiaPaso" -> {
 
                 GuiaPasoScreen(
                     etapaId = etapaSeleccionada,
+
                     modifier = contenidoModifier,
 
                     onVolver = {
@@ -319,9 +635,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // PREGUNTAS FRECUENTES
-            // =========================================
+            // ======================================
+
             "Faq" -> {
 
                 FaqScreen(
@@ -333,9 +650,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // MIS ENTREGABLES
-            // =========================================
+            // ======================================
+
             "Entregables" -> {
 
                 EntregablesScreen(
@@ -343,9 +661,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
-            // NUEVO ENTREGABLE - ROOM + SQLITE
-            // =========================================
+            // ======================================
+            // REGISTRO DE ENTREGABLES
+            // ======================================
+
             "RegistroEntregable" -> {
 
                 RegistroEntregableScreen(
@@ -361,9 +680,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
-            // CALENDARIO Y RECORDATORIOS
-            // =========================================
+            // ======================================
+            // CALENDARIO
+            // ======================================
+
             "Hitos" -> {
 
                 HitosScreen(
@@ -375,9 +695,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // RUBRICAS
-            // =========================================
+            // ======================================
+
             "Rubricas" -> {
 
                 RubricasScreen(
@@ -389,9 +710,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
-            // NOVEDADES
-            // =========================================
+            // ======================================
+            // NOVEDADES ACADEMICAS
+            // ======================================
+
             "Actualizaciones" -> {
 
                 ActualizacionesScreen(
@@ -403,9 +725,10 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
             // ACCESIBILIDAD
-            // =========================================
+            // ======================================
+
             "Accesibilidad" -> {
 
                 AccesibilidadScreen(
@@ -417,9 +740,25 @@ fun AppNavigation(
                 )
             }
 
-            // =========================================
+            // ======================================
+            // DIAGNOSTICO BIOMETRICO
+            // ======================================
+
+            "DiagnosticoBiometria" -> {
+
+                DiagnosticoBiometriaScreen(
+                    modifier = contenidoModifier,
+
+                    onVolver = {
+                        pantallaActual = "Recursos"
+                    }
+                )
+            }
+
+            // ======================================
             // MENU DE RECURSOS
-            // =========================================
+            // ======================================
+
             "Recursos" -> {
 
                 RecursosScreen(
@@ -430,12 +769,16 @@ fun AppNavigation(
                     },
 
                     onFaq = {
+
                         origenFaq = "Recursos"
+
                         pantallaActual = "Faq"
                     },
 
                     onHitos = {
+
                         origenHitos = "Recursos"
+
                         pantallaActual = "Hitos"
                     },
 
@@ -445,36 +788,48 @@ fun AppNavigation(
 
                     onAccesibilidad = {
                         pantallaActual = "Accesibilidad"
+                    },
+
+                    onBiometria = {
+                        pantallaActual = "DiagnosticoBiometria"
                     }
                 )
             }
 
-            // =========================================
+            // ======================================
             // PANTALLAS EN DESARROLLO
-            // =========================================
+            // ======================================
+
             else -> {
 
                 Box(
                     modifier = contenidoModifier
                         .background(colores.fondo),
+
                     contentAlignment = Alignment.Center
                 ) {
 
                     Column(
                         modifier = Modifier.padding(24.dp),
+
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+
+                        verticalArrangement =
+                            Arrangement.spacedBy(14.dp)
                     ) {
 
                         Text(
                             text = pantallaActual,
+
                             color = colores.texto,
+
                             style = MaterialTheme
                                 .typography.headlineMedium
                         )
 
                         Text(
                             text = "Esta sección está en desarrollo.",
+
                             color = colores.textoSecundario
                         )
 
@@ -484,19 +839,23 @@ fun AppNavigation(
                             },
 
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (altoContraste) {
-                                    Color.Yellow
-                                } else {
-                                    colores.encabezado
-                                },
 
-                                contentColor = if (altoContraste) {
-                                    Color.Black
-                                } else {
-                                    Color.White
-                                }
+                                containerColor =
+                                    if (altoContraste) {
+                                        Color.Yellow
+                                    } else {
+                                        colores.encabezado
+                                    },
+
+                                contentColor =
+                                    if (altoContraste) {
+                                        Color.Black
+                                    } else {
+                                        Color.White
+                                    }
                             )
                         ) {
+
                             Text("Volver al inicio")
                         }
                     }
@@ -513,14 +872,22 @@ fun AppNavigation(
 @Composable
 private fun RecursosScreen(
     modifier: Modifier = Modifier,
+
     onRubricas: () -> Unit,
+
     onFaq: () -> Unit,
+
     onHitos: () -> Unit,
+
     onActualizaciones: () -> Unit,
-    onAccesibilidad: () -> Unit
+
+    onAccesibilidad: () -> Unit,
+
+    onBiometria: () -> Unit
 ) {
 
     val colores = LocalColoresEsucar.current
+
     val altoContraste = colores.fondo == Color.Black
 
     Column(
@@ -532,9 +899,13 @@ private fun RecursosScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
+        // ======================================
         // ENCABEZADO
+        // ======================================
+
         Surface(
             color = colores.encabezado,
+
             shape = RoundedCornerShape(24.dp),
 
             border = if (altoContraste) {
@@ -554,16 +925,23 @@ private fun RecursosScreen(
 
                 Text(
                     text = "ESUCAR · APOYO ACADÉMICO",
+
                     color = colores.acento,
+
                     fontSize = 12.sp,
+
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "Recursos académicos",
+
                     color = colores.textoEncabezado,
+
                     fontSize = 27.sp,
+
                     lineHeight = 33.sp,
+
                     fontWeight = FontWeight.Bold
                 )
 
@@ -578,20 +956,30 @@ private fun RecursosScreen(
                     },
 
                     fontSize = 14.sp,
+
                     lineHeight = 21.sp
                 )
             }
         }
 
+        // ======================================
         // TITULO
+        // ======================================
+
         Text(
             text = "Herramientas disponibles",
+
             color = colores.texto,
+
             fontSize = 20.sp,
+
             fontWeight = FontWeight.Bold
         )
 
+        // ======================================
         // NOVEDADES
+        // ======================================
+
         TarjetaRecurso(
             titulo = "Novedades académicas",
 
@@ -599,11 +987,16 @@ private fun RecursosScreen(
                     "desde internet y disponible sin conexión.",
 
             textoBoton = "Ver novedades",
+
             onClick = onActualizaciones,
+
             destacado = true
         )
 
+        // ======================================
         // RUBRICAS
+        // ======================================
+
         TarjetaRecurso(
             titulo = "Rúbricas de evaluación",
 
@@ -611,10 +1004,14 @@ private fun RecursosScreen(
                     "de las cinco etapas académicas.",
 
             textoBoton = "Ver rúbricas",
+
             onClick = onRubricas
         )
 
+        // ======================================
         // PREGUNTAS FRECUENTES
+        // ======================================
+
         TarjetaRecurso(
             titulo = "Preguntas frecuentes",
 
@@ -622,10 +1019,14 @@ private fun RecursosScreen(
                     "metodología y formato.",
 
             textoBoton = "Ver preguntas frecuentes",
+
             onClick = onFaq
         )
 
+        // ======================================
         // CALENDARIO
+        // ======================================
+
         TarjetaRecurso(
             titulo = "Calendario académico",
 
@@ -633,10 +1034,14 @@ private fun RecursosScreen(
                     "recordatorios de entrega.",
 
             textoBoton = "Ver calendario",
+
             onClick = onHitos
         )
 
+        // ======================================
         // ACCESIBILIDAD
+        // ======================================
+
         TarjetaRecurso(
             titulo = "Accesibilidad",
 
@@ -644,17 +1049,39 @@ private fun RecursosScreen(
                     "para facilitar la lectura.",
 
             textoBoton = "Configurar accesibilidad",
+
             onClick = onAccesibilidad
         )
 
-        // ADVERTENCIA
+        // ======================================
+        // NUEVO: DIAGNOSTICO BIOMETRICO
+        // ======================================
+
+        TarjetaRecurso(
+            titulo = "Seguridad biométrica",
+
+            descripcion = "Comprueba si tu dispositivo " +
+                    "admite autenticación mediante " +
+                    "huella o rostro compatible.",
+
+            textoBoton = "Comprobar biometría",
+
+            onClick = onBiometria
+        )
+
+        // ======================================
+        // ADVERTENCIA INSTITUCIONAL
+        // ======================================
+
         Text(
             text = "Contenido orientativo del prototipo. " +
                     "Las novedades y rúbricas de demostración " +
                     "no constituyen información oficial de ESUCAR.",
 
             color = colores.textoSecundario,
+
             fontSize = 12.sp,
+
             lineHeight = 18.sp
         )
     }
@@ -667,13 +1094,18 @@ private fun RecursosScreen(
 @Composable
 private fun TarjetaRecurso(
     titulo: String,
+
     descripcion: String,
+
     textoBoton: String,
+
     onClick: () -> Unit,
+
     destacado: Boolean = false
 ) {
 
     val colores = LocalColoresEsucar.current
+
     val altoContraste = colores.fondo == Color.Black
 
     Card(
@@ -684,7 +1116,10 @@ private fun TarjetaRecurso(
         ),
 
         border = if (altoContraste) {
-            BorderStroke(1.dp, colores.borde)
+            BorderStroke(
+                1.dp,
+                colores.borde
+            )
         } else {
             null
         },
@@ -710,15 +1145,21 @@ private fun TarjetaRecurso(
 
             Text(
                 text = titulo,
+
                 color = colores.texto,
+
                 fontSize = 18.sp,
+
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = descripcion,
+
                 color = colores.textoSecundario,
+
                 fontSize = 14.sp,
+
                 lineHeight = 20.sp
             )
 
@@ -726,9 +1167,11 @@ private fun TarjetaRecurso(
 
                 Button(
                     onClick = onClick,
+
                     modifier = Modifier.fillMaxWidth(),
 
                     colors = ButtonDefaults.buttonColors(
+
                         containerColor = if (altoContraste) {
                             Color.Yellow
                         } else {
@@ -742,6 +1185,7 @@ private fun TarjetaRecurso(
                         }
                     )
                 ) {
+
                     Text(textoBoton)
                 }
 
@@ -749,6 +1193,7 @@ private fun TarjetaRecurso(
 
                 OutlinedButton(
                     onClick = onClick,
+
                     modifier = Modifier.fillMaxWidth(),
 
                     border = BorderStroke(
@@ -765,10 +1210,12 @@ private fun TarjetaRecurso(
                         }
                     ),
 
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = colores.texto
-                    )
+                    colors =
+                        ButtonDefaults.outlinedButtonColors(
+                            contentColor = colores.texto
+                        )
                 ) {
+
                     Text(textoBoton)
                 }
             }

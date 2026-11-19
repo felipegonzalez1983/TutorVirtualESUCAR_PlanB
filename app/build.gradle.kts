@@ -31,7 +31,7 @@ android {
             optimization {
                 enable = true
                 packageScope = setOf(
-                    "androidx.**",
+                    "android.**",
                     "kotlin.**",
                     "kotlinx.**"
                 )
@@ -51,7 +51,10 @@ android {
 
 dependencies {
 
+    // ==========================================
     // JETPACK COMPOSE
+    // ==========================================
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -59,19 +62,31 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
+    // ==========================================
     // ANDROID
+    // ==========================================
+
     implementation(libs.androidx.core.ktx)
 
+    // ==========================================
     // ARQUITECTURA MVVM
+    // ==========================================
+
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    // DATASTORE - MANTENEMOS EL ACTUAL
+    // ==========================================
+    // DATASTORE
+    // ==========================================
+
     implementation(
         "androidx.datastore:datastore-preferences:1.1.7"
     )
 
+    // ==========================================
     // ROOM + SQLITE
+    // ==========================================
+
     implementation(
         "androidx.room:room-runtime:2.8.5"
     )
@@ -85,7 +100,19 @@ dependencies {
         "androidx.room:room-compiler:2.8.5"
     )
 
+    // ==========================================
+    // AUTENTICACION BIOMETRICA
+    // HUELLA DIGITAL / ROSTRO COMPATIBLE
+    // ==========================================
+
+    implementation(
+        "androidx.biometric:biometric:1.1.0"
+    )
+
+    // ==========================================
     // PRUEBAS
+    // ==========================================
+
     testImplementation(libs.junit)
 
     androidTestImplementation(
@@ -104,7 +131,10 @@ dependencies {
         libs.androidx.junit
     )
 
+    // ==========================================
     // HERRAMIENTAS DE DESARROLLO
+    // ==========================================
+
     debugImplementation(
         libs.androidx.compose.ui.test.manifest
     )
